@@ -1,0 +1,6 @@
+[workspace]
+members = ["outline"]
+resolver = "2"
+
+[workspace.dependencies]
+bevy = { version = "0.18.1", default-features = false }

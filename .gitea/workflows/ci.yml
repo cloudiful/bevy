@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Restore Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run crate tests
+        run: cargo test -p bevy_shell_outline
+
+      - name: Check example
+        run: cargo check -p bevy_shell_outline --example basic
+
+  publish:
+    needs: test
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Restore Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Publish crate to Kellnr
+        env:
+          KELLNR_TOKEN: ${{ secrets.KELLNR_TOKEN }}
+        run: |
+          if [ -z "$KELLNR_TOKEN" ]; then
+            echo "Missing secret: KELLNR_TOKEN"
+            exit 1
+          fi
+          cargo publish --manifest-path outline/Cargo.toml --registry kellnr --token "$KELLNR_TOKEN"
