@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   classifyRegistryInfoResult,
   formatVerificationError,
+  formatVerificationSummary,
   registryTokenEnvName,
 } from "./publish.mjs";
 
@@ -65,6 +66,21 @@ test("formatVerificationError includes crate version and registry context", () =
   assert.match(message, /cloudiful-bevy-camera 0\.2\.0/);
   assert.match(message, /crates-io/);
   assert.match(message, /authentication failed/);
+});
+
+test("formatVerificationSummary includes local version registry state and decision", () => {
+  const summary = formatVerificationSummary(
+    { name: "cloudiful-bevy-camera", version: "0.2.0" },
+    "crates-io",
+    "missing",
+  );
+
+  assert.match(summary, /\[publish-check\]/);
+  assert.match(summary, /crate=cloudiful-bevy-camera/);
+  assert.match(summary, /registry=crates-io/);
+  assert.match(summary, /local=0\.2\.0/);
+  assert.match(summary, /registry_version=missing/);
+  assert.match(summary, /decision=publish/);
 });
 
 test("registryTokenEnvName normalizes dashed registries", () => {

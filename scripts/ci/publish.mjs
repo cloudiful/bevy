@@ -210,6 +210,21 @@ function formatVerificationError(crateInfo, registry, result) {
     : `Failed to verify ${crateInfo.name} ${crateInfo.version} in ${registry}.`;
 }
 
+function formatVerificationSummary(crateInfo, registry, state) {
+  const registryVersion = state === "exists" ? crateInfo.version : state;
+  const decision =
+    state === "exists" ? "skip" : state === "missing" ? "publish" : "abort";
+
+  return [
+    `[publish-check]`,
+    `crate=${crateInfo.name}`,
+    `registry=${registry}`,
+    `local=${crateInfo.version}`,
+    `registry_version=${registryVersion}`,
+    `decision=${decision}`,
+  ].join(" ");
+}
+
 function verifyCrateVersionInRegistry(crateInfo, registry, token) {
   const result = runCommandCapture(
     "cargo",
@@ -270,11 +285,9 @@ function runPublishToRegistry(crates, { registry, token }) {
     }
 
     const verification = verifyCrateVersionInRegistry(crateInfo, registry, token);
+    console.log(formatVerificationSummary(crateInfo, registry, verification.state));
 
     if (verification.state === "exists") {
-      console.log(
-        `Skipping ${crateInfo.name} ${crateInfo.version} for ${registry}: version already exists`,
-      );
       continue;
     }
 
@@ -332,6 +345,7 @@ function main() {
 export {
   classifyRegistryInfoResult,
   formatVerificationError,
+  formatVerificationSummary,
   registryTokenEnvName,
 };
 
