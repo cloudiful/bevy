@@ -10,8 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        crate:
-          - outline
+        include:
+          - crate: outline
+            example: basic
+          - crate: camera
+            example: ""
     name: test (${{ matrix.crate }})
     steps:
       - name: Checkout
@@ -29,7 +32,8 @@ jobs:
         run: cargo test --manifest-path ${{ matrix.crate }}/Cargo.toml
 
       - name: Check example
-        run: cargo check --manifest-path ${{ matrix.crate }}/Cargo.toml --example basic
+        if: ${{ matrix.example != '' }}
+        run: cargo check --manifest-path ${{ matrix.crate }}/Cargo.toml --example ${{ matrix.example }}
 
   publish:
     needs: test
@@ -37,8 +41,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        crate:
-          - outline
+        include:
+          - crate: outline
+          - crate: camera
     name: publish (${{ matrix.crate }})
     steps:
       - name: Checkout
