@@ -1,0 +1,15 @@
+[package]
+name = "cloudiful-bevy-camera"
+version = "0.1.0"
+edition = "2024"
+description = "Reusable camera switching core for Bevy."
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+repository = "ssh://git@gitea.cloud1ful.com:2223/bevy/camera.git"
+homepage = "https://gitea.cloud1ful.com/bevy/camera"
+documentation = "https://docs.rs/cloudiful-bevy-camera"
+keywords = ["bevy", "camera", "gamedev"]
+categories = ["game-development"]
+
+[dependencies]
+bevy = { workspace = true, features = ["bevy_camera"] }
