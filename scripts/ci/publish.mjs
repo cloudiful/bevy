@@ -152,8 +152,8 @@ function buildPlan({ eventName, baseSha, beforeSha, headSha }) {
   return {
     hasTestCrates: testMatrix.length > 0,
     hasPublishCrates: publishMatrix.length > 0,
-    testMatrix: { include: testMatrix },
-    publishMatrix: { include: publishMatrix },
+    testCrates: testMatrix.map((entry) => entry.crate),
+    publishCrates: publishMatrix.map((entry) => entry.crate),
   };
 }
 
@@ -161,31 +161,81 @@ function writeOutputs(outputPath, plan) {
   const lines = [
     `has_test_crates=${plan.hasTestCrates ? "true" : "false"}`,
     `has_publish_crates=${plan.hasPublishCrates ? "true" : "false"}`,
-    `test_matrix=${JSON.stringify(plan.testMatrix)}`,
-    `publish_matrix=${JSON.stringify(plan.publishMatrix)}`,
+    `test_crates=${JSON.stringify(plan.testCrates)}`,
+    `publish_crates=${JSON.stringify(plan.publishCrates)}`,
   ];
   appendFileSync(outputPath, `${lines.join("\n")}\n`, "utf8");
 }
 
+function parseCratesJson(input) {
+  const crates = JSON.parse(input ?? "[]");
+  if (!Array.isArray(crates) || crates.some((item) => typeof item !== "string")) {
+    throw new Error("Expected JSON array of crate directory strings");
+  }
+  return crates;
+}
+
+function runCommand(command, args) {
+  execFileSync(command, args, {
+    cwd: ROOT,
+    stdio: "inherit",
+  });
+}
+
+function runTests(crates) {
+  for (const crate of crates) {
+    runCommand("cargo", ["test", "--manifest-path", `${crate}/Cargo.toml`]);
+    runCommand("cargo", ["check", "--manifest-path", `${crate}/Cargo.toml`, "--examples"]);
+  }
+}
+
+function runPublish(crates, token) {
+  for (const crate of crates) {
+    runCommand("cargo", [
+      "publish",
+      "--manifest-path",
+      `${crate}/Cargo.toml`,
+      "--registry",
+      "kellnr",
+      "--token",
+      token,
+    ]);
+  }
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
-  if (args.command !== "plan") {
-    throw new Error("Expected command: plan");
-  }
+  if (args.command === "plan") {
+    const plan = buildPlan({
+      eventName: args.eventName,
+      baseSha: args.baseSha,
+      beforeSha: args.beforeSha,
+      headSha: args.headSha,
+    });
 
-  const plan = buildPlan({
-    eventName: args.eventName,
-    baseSha: args.baseSha,
-    beforeSha: args.beforeSha,
-    headSha: args.headSha,
-  });
+    if (args.githubOutput) {
+      writeOutputs(args.githubOutput, plan);
+      return;
+    }
 
-  if (args.githubOutput) {
-    writeOutputs(args.githubOutput, plan);
+    process.stdout.write(`${JSON.stringify(plan, null, 2)}\n`);
     return;
   }
 
-  process.stdout.write(`${JSON.stringify(plan, null, 2)}\n`);
+  if (args.command === "test") {
+    runTests(parseCratesJson(args.cratesJson));
+    return;
+  }
+
+  if (args.command === "publish") {
+    if (!args.token) {
+      throw new Error("Expected --token for publish command");
+    }
+    runPublish(parseCratesJson(args.cratesJson), args.token);
+    return;
+  }
+
+  throw new Error("Expected command: plan, test, or publish");
 }
 
 main();

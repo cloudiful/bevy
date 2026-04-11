@@ -11,8 +11,8 @@ jobs:
     outputs:
       has_test_crates: ${{ steps.detect.outputs.has_test_crates }}
       has_publish_crates: ${{ steps.detect.outputs.has_publish_crates }}
-      test_matrix: ${{ steps.detect.outputs.test_matrix }}
-      publish_matrix: ${{ steps.detect.outputs.publish_matrix }}
+      test_crates: ${{ steps.detect.outputs.test_crates }}
+      publish_crates: ${{ steps.detect.outputs.publish_crates }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,9 +38,7 @@ jobs:
     needs: detect_changes
     if: ${{ needs.detect_changes.outputs.has_test_crates == 'true' }}
     runs-on: ubuntu-latest
-    strategy:
-      matrix: ${{ fromJson(needs.detect_changes.outputs.test_matrix) }}
-    name: test (${{ matrix.crate }})
+    name: test
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -53,19 +51,16 @@ jobs:
       - name: Restore Rust cache
         uses: Swatinem/rust-cache@v2
 
-      - name: Run crate tests
-        run: cargo test --manifest-path ${{ matrix.crate }}/Cargo.toml
-
-      - name: Check examples
-        run: cargo check --manifest-path ${{ matrix.crate }}/Cargo.toml --examples
+      - name: Run changed crate tests
+        run: |
+          node scripts/ci/publish.mjs test \
+            --crates-json '${{ needs.detect_changes.outputs.test_crates }}'
 
   publish:
     needs: [detect_changes, test]
     if: ${{ (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && needs.detect_changes.outputs.has_publish_crates == 'true' }}
     runs-on: ubuntu-latest
-    strategy:
-      matrix: ${{ fromJson(needs.detect_changes.outputs.publish_matrix) }}
-    name: publish (${{ matrix.crate }})
+    name: publish
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -80,7 +75,7 @@ jobs:
       - name: Restore Rust cache
         uses: Swatinem/rust-cache@v2
 
-      - name: Publish crate to Kellnr
+      - name: Publish changed crates to Kellnr
         env:
           KELLNR_TOKEN: ${{ secrets.KELLNR_TOKEN }}
         run: |
@@ -88,4 +83,6 @@ jobs:
             echo "Missing secret: KELLNR_TOKEN"
             exit 1
           fi
-          cargo publish --manifest-path ${{ matrix.crate }}/Cargo.toml --registry kellnr --token "$KELLNR_TOKEN"
+          node scripts/ci/publish.mjs publish \
+            --crates-json '${{ needs.detect_changes.outputs.publish_crates }}' \
+            --token "$KELLNR_TOKEN"
