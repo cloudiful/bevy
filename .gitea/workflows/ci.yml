@@ -80,7 +80,7 @@ jobs:
 
   publish:
     needs: [detect_changes, test]
-    if: ${{ (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && needs.detect_changes.outputs.has_publish_crates == 'true' }}
+    if: ${{ always() && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && needs.detect_changes.outputs.has_publish_crates == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped') }}
     runs-on: rust
     name: publish
     steps:
