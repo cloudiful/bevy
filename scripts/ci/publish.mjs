@@ -189,14 +189,38 @@ function runTests(crates) {
   }
 }
 
-function runPublish(crates, token) {
+function runMultiPublish(crates, { kellnrToken, cratesIoToken }) {
+  if (!kellnrToken && !cratesIoToken) {
+    throw new Error("Expected at least one publish token");
+  }
+
+  if (cratesIoToken) {
+    runPublishToRegistry(crates, {
+      registry: "crates-io",
+      token: cratesIoToken,
+    });
+  }
+
+  if (kellnrToken) {
+    runPublishToRegistry(crates, {
+      registry: "kellnr",
+      token: kellnrToken,
+    });
+  }
+}
+
+function runPublishToRegistry(crates, { registry, token }) {
+  if (!token) {
+    throw new Error(`Expected token for registry: ${registry}`);
+  }
+
   for (const crate of crates) {
     runCommand("cargo", [
       "publish",
       "--manifest-path",
       `${crate}/Cargo.toml`,
       "--registry",
-      "kellnr",
+      registry,
       "--token",
       token,
     ]);
@@ -228,10 +252,10 @@ function main() {
   }
 
   if (args.command === "publish") {
-    if (!args.token) {
-      throw new Error("Expected --token for publish command");
-    }
-    runPublish(parseCratesJson(args.cratesJson), args.token);
+    runMultiPublish(parseCratesJson(args.cratesJson), {
+      kellnrToken: args.kellnrToken,
+      cratesIoToken: args.cratesIoToken,
+    });
     return;
   }
 

@@ -8,6 +8,7 @@ Repository rules for `/Volumes/Enterprise/codes/cloudiful-bevy`.
 - New workspace crates are discovered automatically via `cargo metadata`.
 - Shared workspace files (`Cargo.toml`, `Cargo.lock`, `.cargo/*`, `rust-toolchain*`) are treated as affecting all crates.
 - Publish eligibility is automatic per crate: crate changed in git diff and its `package.version` differs from base revision.
+- If both `CRATESIO_TOKEN` and `KELLNR_TOKEN` are present in CI, publish step pushes eligible crates to both registries.
 
 ## Workspace policy
 

@@ -78,11 +78,13 @@ jobs:
       - name: Publish changed crates to Kellnr
         env:
           KELLNR_TOKEN: ${{ secrets.KELLNR_TOKEN }}
+          CRATESIO_TOKEN: ${{ secrets.CRATESIO_TOKEN }}
         run: |
-          if [ -z "$KELLNR_TOKEN" ]; then
-            echo "Missing secret: KELLNR_TOKEN"
+          if [ -z "$KELLNR_TOKEN" ] && [ -z "$CRATESIO_TOKEN" ]; then
+            echo "Missing secrets: KELLNR_TOKEN or CRATESIO_TOKEN"
             exit 1
           fi
           node scripts/ci/publish.mjs publish \
             --crates-json '${{ needs.detect_changes.outputs.publish_crates }}' \
-            --token "$KELLNR_TOKEN"
+            --kellnr-token "$KELLNR_TOKEN" \
+            --crates-io-token "$CRATESIO_TOKEN"
