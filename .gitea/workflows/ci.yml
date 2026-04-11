@@ -15,14 +15,7 @@ jobs:
       publish_crates: ${{ steps.detect.outputs.publish_crates }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: stable
+        uses: actions/checkout@v6
 
       - name: Build crate matrix
         id: detect
@@ -54,22 +47,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: stable
-
-      - name: Install system deps
-        run: |
-          if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
-            sudo sed -i 's|http://archive.ubuntu.com/ubuntu|https://apt.cloud1ful.com/ubuntu|g; s|http://security.ubuntu.com/ubuntu|https://apt.cloud1ful.com/ubuntu|g; s|https://archive.ubuntu.com/ubuntu|https://apt.cloud1ful.com/ubuntu|g; s|https://security.ubuntu.com/ubuntu|https://apt.cloud1ful.com/ubuntu|g' /etc/apt/sources.list.d/ubuntu.sources
-          fi
-          if [ -f /etc/apt/sources.list ]; then
-            sudo sed -i 's|http://archive.ubuntu.com/ubuntu|https://apt.cloud1ful.com/ubuntu|g; s|http://security.ubuntu.com/ubuntu|https://apt.cloud1ful.com/ubuntu|g; s|https://archive.ubuntu.com/ubuntu|https://apt.cloud1ful.com/ubuntu|g; s|https://security.ubuntu.com/ubuntu|https://apt.cloud1ful.com/ubuntu|g' /etc/apt/sources.list
-          fi
-          sudo apt-get update
-          sudo apt-get install -y pkg-config libudev-dev
-
       - name: Restore Rust cache
         uses: Swatinem/rust-cache@v2
 
@@ -86,24 +63,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: stable
-
-      - name: Install system deps
-        run: |
-          if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
-            sudo sed -i 's|http://archive.ubuntu.com/ubuntu|https://apt.cloud1ful.com/ubuntu|g; s|http://security.ubuntu.com/ubuntu|https://apt.cloud1ful.com/ubuntu|g; s|https://archive.ubuntu.com/ubuntu|https://apt.cloud1ful.com/ubuntu|g; s|https://security.ubuntu.com/ubuntu|https://apt.cloud1ful.com/ubuntu|g' /etc/apt/sources.list.d/ubuntu.sources
-          fi
-          if [ -f /etc/apt/sources.list ]; then
-            sudo sed -i 's|http://archive.ubuntu.com/ubuntu|https://apt.cloud1ful.com/ubuntu|g; s|http://security.ubuntu.com/ubuntu|https://apt.cloud1ful.com/ubuntu|g; s|https://archive.ubuntu.com/ubuntu|https://apt.cloud1ful.com/ubuntu|g; s|https://security.ubuntu.com/ubuntu|https://apt.cloud1ful.com/ubuntu|g' /etc/apt/sources.list
-          fi
-          sudo apt-get update
-          sudo apt-get install -y pkg-config libudev-dev
 
       - name: Restore Rust cache
         uses: Swatinem/rust-cache@v2
