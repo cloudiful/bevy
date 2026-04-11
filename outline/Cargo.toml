@@ -1,6 +1,6 @@
 [package]
 name = "bevy_shell_outline"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "Reusable geometry-shell outline plugin for Bevy."
 readme = "README.md"

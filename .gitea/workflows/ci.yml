@@ -8,6 +8,11 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        crate:
+          - outline
+    name: test (${{ matrix.crate }})
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,18 +26,25 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Run crate tests
-        run: cargo test -p bevy_shell_outline
+        run: cargo test --manifest-path ${{ matrix.crate }}/Cargo.toml
 
       - name: Check example
-        run: cargo check -p bevy_shell_outline --example basic
+        run: cargo check --manifest-path ${{ matrix.crate }}/Cargo.toml --example basic
 
   publish:
     needs: test
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        crate:
+          - outline
+    name: publish (${{ matrix.crate }})
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
@@ -42,7 +54,28 @@ jobs:
       - name: Restore Rust cache
         uses: Swatinem/rust-cache@v2
 
+      - name: Detect crate changes
+        id: crate_change
+        shell: bash
+        run: |
+          crate_dir="${{ matrix.crate }}"
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+            echo "Manual dispatch, publish enabled for $crate_dir."
+            exit 0
+          fi
+
+          if git diff --quiet "${{ github.event.before }}" "${{ github.sha }}" -- "$crate_dir"; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "No changes detected in $crate_dir, publish skipped."
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+            echo "Changes detected in $crate_dir, publish enabled."
+          fi
+
       - name: Publish crate to Kellnr
+        if: steps.crate_change.outputs.publish == 'true'
         env:
           KELLNR_TOKEN: ${{ secrets.KELLNR_TOKEN }}
         run: |
@@ -50,4 +83,8 @@ jobs:
             echo "Missing secret: KELLNR_TOKEN"
             exit 1
           fi
-          cargo publish --manifest-path outline/Cargo.toml --registry kellnr --token "$KELLNR_TOKEN"
+          cargo publish --manifest-path ${{ matrix.crate }}/Cargo.toml --registry kellnr --token "$KELLNR_TOKEN"
+
+      - name: Skip publish
+        if: steps.crate_change.outputs.publish != 'true'
+        run: echo "Skipping publish for ${{ matrix.crate }} because the crate directory did not change."
