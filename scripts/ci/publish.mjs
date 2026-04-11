@@ -72,6 +72,7 @@ function workspaceCrates() {
     .filter((pkg) => workspaceMembers.has(pkg.id))
     .map((pkg) => ({
       crate: relative(ROOT, dirname(pkg.manifest_path)),
+      name: pkg.name,
       version: pkg.version,
     }))
     .sort((left, right) => left.crate.localeCompare(right.crate));
@@ -106,46 +107,18 @@ function crateChanged(crateDir, files, affectsAll) {
   return files.some((path) => path === crateDir || path.startsWith(`${crateDir}/`));
 }
 
-function baseVersion(baseSha, crateDir) {
-  if (!baseSha || baseSha === ZERO_SHA) {
-    return null;
-  }
-
-  const content = runGit(["show", `${baseSha}:${crateDir}/Cargo.toml`], {
-    allowFailure: true,
-  });
-  if (content == null) {
-    return null;
-  }
-
-  try {
-    return parsePackageVersion(content);
-  } catch {
-    return null;
-  }
-}
-
-function versionChanged(current, previous) {
-  return previous == null || current !== previous;
-}
-
 function buildPlan({ eventName, baseSha, beforeSha, headSha }) {
   const crates = workspaceCrates();
   const diffBase = baseSha || beforeSha || null;
   const { affectsAll, files } = changedFiles(diffBase, headSha, eventName);
 
   const testMatrix = [];
-  const publishMatrix = [];
+  const publishMatrix = crates.map((crate) => crate.crate);
 
   for (const crate of crates) {
     const changed = crateChanged(crate.crate, files, affectsAll);
     if (changed) {
       testMatrix.push({ crate: crate.crate });
-    }
-
-    const previousVersion = baseVersion(diffBase, crate.crate);
-    if (changed && versionChanged(crate.version, previousVersion)) {
-      publishMatrix.push({ crate: crate.crate });
     }
   }
 
@@ -153,7 +126,7 @@ function buildPlan({ eventName, baseSha, beforeSha, headSha }) {
     hasTestCrates: testMatrix.length > 0,
     hasPublishCrates: publishMatrix.length > 0,
     testCrates: testMatrix.map((entry) => entry.crate),
-    publishCrates: publishMatrix.map((entry) => entry.crate),
+    publishCrates: publishMatrix,
   };
 }
 
@@ -180,6 +153,40 @@ function runCommand(command, args) {
     cwd: ROOT,
     stdio: "inherit",
   });
+}
+
+function registryTokenEnvName(registry) {
+  return `CARGO_REGISTRIES_${registry.replace(/-/g, "_").toUpperCase()}_TOKEN`;
+}
+
+function commandSucceeds(command, args, { env = {} } = {}) {
+  try {
+    execFileSync(command, args, {
+      cwd: ROOT,
+      stdio: "ignore",
+      env: {
+        ...process.env,
+        ...env,
+      },
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function crateVersionExistsInRegistry(crateInfo, registry, token) {
+  return commandSucceeds(
+    "cargo",
+    ["info", "--registry", registry, `${crateInfo.name}@${crateInfo.version}`],
+    {
+      env: token
+        ? {
+            [registryTokenEnvName(registry)]: token,
+          }
+        : {},
+    },
+  );
 }
 
 function runTests(crates) {
@@ -214,7 +221,21 @@ function runPublishToRegistry(crates, { registry, token }) {
     throw new Error(`Expected token for registry: ${registry}`);
   }
 
+  const workspaceByDir = new Map(workspaceCrates().map((crate) => [crate.crate, crate]));
+
   for (const crate of crates) {
+    const crateInfo = workspaceByDir.get(crate);
+    if (!crateInfo) {
+      throw new Error(`Unknown workspace crate: ${crate}`);
+    }
+
+    if (crateVersionExistsInRegistry(crateInfo, registry, token)) {
+      console.log(
+        `Skipping ${crateInfo.name} ${crateInfo.version} for ${registry}: version already exists`,
+      );
+      continue;
+    }
+
     runCommand("cargo", [
       "publish",
       "--manifest-path",
