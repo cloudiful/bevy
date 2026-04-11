@@ -1,0 +1,15 @@
+[package]
+name = "cloudiful-bevy-input"
+version = "0.1.0"
+edition = "2024"
+description = "Reusable Bevy input abstraction for game-defined actions."
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/cloudiful/cloudiful-bevy.git"
+homepage = "https://github.com/cloudiful/cloudiful-bevy"
+documentation = "https://docs.rs/cloudiful-bevy-input"
+keywords = ["bevy", "input", "gamepad", "keyboard", "gamedev"]
+categories = ["game-development"]
+
+[dependencies]
+bevy = { workspace = true, features = ["keyboard", "gamepad", "bevy_gilrs"] }

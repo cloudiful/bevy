@@ -1,5 +1,5 @@
 [workspace]
-members = ["outline", "camera"]
+members = ["outline", "camera", "input"]
 resolver = "2"
 
 [workspace.dependencies]
