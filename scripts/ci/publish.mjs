@@ -118,7 +118,11 @@ function baseVersion(baseSha, crateDir) {
     return null;
   }
 
-  return parsePackageVersion(content);
+  try {
+    return parsePackageVersion(content);
+  } catch {
+    return null;
+  }
 }
 
 function versionChanged(current, previous) {
