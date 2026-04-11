@@ -159,24 +159,59 @@ function registryTokenEnvName(registry) {
   return `CARGO_REGISTRIES_${registry.replace(/-/g, "_").toUpperCase()}_TOKEN`;
 }
 
-function commandSucceeds(command, args, { env = {} } = {}) {
+function runCommandCapture(command, args, { env = {} } = {}) {
   try {
-    execFileSync(command, args, {
-      cwd: ROOT,
-      stdio: "ignore",
-      env: {
-        ...process.env,
-        ...env,
-      },
-    });
-    return true;
-  } catch {
-    return false;
+    return {
+      status: 0,
+      stdout: execFileSync(command, args, {
+        cwd: ROOT,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+        env: {
+          ...process.env,
+          ...env,
+        },
+      }),
+      stderr: "",
+    };
+  } catch (error) {
+    return {
+      status: error.status ?? 1,
+      stdout: error.stdout?.toString?.() ?? "",
+      stderr: error.stderr?.toString?.() ?? error.message,
+    };
   }
 }
 
-function crateVersionExistsInRegistry(crateInfo, registry, token) {
-  return commandSucceeds(
+function classifyRegistryInfoResult(result) {
+  if (result.status === 0) {
+    return "exists";
+  }
+
+  const combined = `${result.stdout}\n${result.stderr}`.toLowerCase();
+  const missingSignals = [
+    "could not find package",
+    "could not find `",
+    "does not exist in registry",
+    "no matching package named",
+  ];
+
+  if (missingSignals.some((signal) => combined.includes(signal))) {
+    return "missing";
+  }
+
+  return "error";
+}
+
+function formatVerificationError(crateInfo, registry, result) {
+  const details = [result.stderr.trim(), result.stdout.trim()].filter(Boolean).join("\n");
+  return details
+    ? `Failed to verify ${crateInfo.name} ${crateInfo.version} in ${registry}.\n${details}`
+    : `Failed to verify ${crateInfo.name} ${crateInfo.version} in ${registry}.`;
+}
+
+function verifyCrateVersionInRegistry(crateInfo, registry, token) {
+  const result = runCommandCapture(
     "cargo",
     ["info", "--registry", registry, `${crateInfo.name}@${crateInfo.version}`],
     {
@@ -187,6 +222,11 @@ function crateVersionExistsInRegistry(crateInfo, registry, token) {
         : {},
     },
   );
+
+  return {
+    state: classifyRegistryInfoResult(result),
+    result,
+  };
 }
 
 function runTests(crates) {
@@ -229,11 +269,17 @@ function runPublishToRegistry(crates, { registry, token }) {
       throw new Error(`Unknown workspace crate: ${crate}`);
     }
 
-    if (crateVersionExistsInRegistry(crateInfo, registry, token)) {
+    const verification = verifyCrateVersionInRegistry(crateInfo, registry, token);
+
+    if (verification.state === "exists") {
       console.log(
         `Skipping ${crateInfo.name} ${crateInfo.version} for ${registry}: version already exists`,
       );
       continue;
+    }
+
+    if (verification.state === "error") {
+      throw new Error(formatVerificationError(crateInfo, registry, verification.result));
     }
 
     runCommand("cargo", [
@@ -283,4 +329,12 @@ function main() {
   throw new Error("Expected command: plan, test, or publish");
 }
 
-main();
+export {
+  classifyRegistryInfoResult,
+  formatVerificationError,
+  registryTokenEnvName,
+};
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main();
+}
