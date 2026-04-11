@@ -19,6 +19,16 @@ Reusable Bevy camera switching core.
 This crate stays narrow on purpose: project code marks cameras with
 `SwitchableCamera` and sends `SwitchCameraRequest` values.
 
+An optional `input_bindings` feature adds a minimal Bevy-native input layer.
+It stays generic on purpose:
+
+- keyboard via `ButtonInput<KeyCode>`
+- optional native gamepad bindings via Bevy `Gamepad`
+- no control-settings resource
+- no rebind workflow
+- no primary-device selection
+- no UI/business-state gating
+
 ## Stable ordering
 
 Candidates always sort by:
@@ -30,6 +40,8 @@ Candidates always sort by:
 That same ordering drives cycle behavior and repeated-slot tie breaking.
 
 ## Usage
+
+### Core only
 
 ```rust
 use bevy::prelude::*;
@@ -53,3 +65,46 @@ fn request_camera(mut requests: MessageWriter<SwitchCameraRequest>) {
     requests.write(SwitchCameraRequest::ToSlot(1));
 }
 ```
+
+### `input_bindings` feature
+
+```rust
+use bevy::prelude::*;
+use cloudiful_bevy_camera::{
+    CameraGamepadBindings, CameraInputBindings, CameraInputBindingsPlugin,
+    CameraSwitchPlugin, SwitchableCamera,
+};
+
+App::new()
+    .add_plugins((
+        DefaultPlugins,
+        CameraSwitchPlugin,
+        CameraInputBindingsPlugin,
+    ))
+    .insert_resource(
+        CameraInputBindings::default()
+            .bind_slot(KeyCode::Digit1, 1)
+            .bind_slot(KeyCode::Digit2, 2)
+            .bind_next(KeyCode::KeyE)
+            .bind_prev(KeyCode::KeyQ)
+            .with_gamepad(
+                CameraGamepadBindings::default()
+                    .bind_slot(GamepadButton::South, 1)
+                    .bind_slot(GamepadButton::East, 2)
+                    .bind_next(GamepadButton::RightTrigger)
+                    .bind_prev(GamepadButton::LeftTrigger),
+            ),
+    );
+
+fn spawn_camera(commands: &mut Commands) {
+    commands.spawn((
+        Camera::default(),
+        SwitchableCamera {
+            slot: Some(1),
+            order_key: 10,
+        },
+    ));
+}
+```
+
+Feature-disabled builds still compile only the core switching API.

@@ -1,6 +1,6 @@
 [package]
 name = "cloudiful-bevy-camera"
-version = "0.1.3"
+version = "0.2.0"
 edition = "2024"
 description = "Reusable camera switching core for Bevy."
 readme = "README.md"
@@ -10,6 +10,10 @@ homepage = "https://gitea.cloud1ful.com/bevy/camera"
 documentation = "https://docs.rs/cloudiful-bevy-camera"
 keywords = ["bevy", "camera", "gamedev"]
 categories = ["game-development"]
+
+[features]
+default = []
+input_bindings = ["bevy/keyboard", "bevy/gamepad", "bevy/bevy_gilrs"]
 
 [dependencies]
 bevy = { workspace = true, features = ["bevy_camera"] }
