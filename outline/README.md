@@ -1,4 +1,4 @@
-# bevy_shell_outline
+# cloudiful-bevy-outline
 
 Small reusable Bevy outline helper crate for geometry-shell outlines.
 
@@ -25,7 +25,7 @@ Add the plugin:
 
 ```rust
 use bevy::prelude::*;
-use bevy_shell_outline::GpmoOutlinePlugin;
+use cloudiful_bevy_outline::GpmoOutlinePlugin;
 
 App::new().add_plugins((DefaultPlugins, GpmoOutlinePlugin::default()));
 ```
@@ -34,7 +34,7 @@ Spawn an outline child:
 
 ```rust
 use bevy::prelude::*;
-use bevy_shell_outline::{OutlineAssets, spawn_default_outline_mesh};
+use cloudiful_bevy_outline::{OutlineAssets, spawn_default_outline_mesh};
 
 fn attach_outline(
     parent: &mut ChildSpawnerCommands,

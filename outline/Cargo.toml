@@ -1,13 +1,13 @@
 [package]
-name = "bevy_shell_outline"
-version = "0.1.1"
+name = "cloudiful-bevy-outline"
+version = "0.2.0"
 edition = "2024"
 description = "Reusable geometry-shell outline plugin for Bevy."
 readme = "README.md"
 license = "MIT OR Apache-2.0"
 repository = "ssh://git@gitea.cloud1ful.com:2223/bevy/outline.git"
 homepage = "https://gitea.cloud1ful.com/bevy/outline"
-documentation = "https://docs.rs/bevy_shell_outline"
+documentation = "https://docs.rs/cloudiful-bevy-outline"
 keywords = ["bevy", "outline", "graphics", "gamedev"]
 categories = ["game-development", "graphics", "rendering"]
 

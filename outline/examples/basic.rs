@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_shell_outline::{
+use cloudiful_bevy_outline::{
     GpmoOutlinePlugin, OutlineAssets, OutlineShell, spawn_default_outline_mesh,
 };
 
