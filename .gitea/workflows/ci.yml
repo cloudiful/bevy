@@ -19,24 +19,14 @@ jobs:
 
       - name: Build crate matrix
         id: detect
-        run: |
-          node scripts/ci/publish.mjs plan \
-            --event-name "${{ github.event_name }}" \
-            --head-sha "${{ github.sha }}" \
-            --base-sha "${{ github.event.pull_request.base.sha }}" \
-            --before-sha "${{ github.event.before }}" \
-            --github-output "$GITHUB_OUTPUT"
-
-      - name: Preview publish registry status
-        continue-on-error: true
         env:
           KELLNR_TOKEN: ${{ secrets.KELLNR_TOKEN }}
           CRATESIO_TOKEN: ${{ secrets.CRATESIO_TOKEN }}
         run: |
-          node scripts/ci/publish.mjs inspect-publish \
-            --crates-json '${{ steps.detect.outputs.publish_crates }}' \
+          node scripts/ci/publish.mjs plan \
             --kellnr-token "$KELLNR_TOKEN" \
-            --crates-io-token "$CRATESIO_TOKEN"
+            --crates-io-token "$CRATESIO_TOKEN" \
+            --github-output "$GITHUB_OUTPUT"
 
   test:
     needs: detect_changes

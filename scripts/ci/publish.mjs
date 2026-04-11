@@ -6,14 +6,6 @@ import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 
 const ROOT = resolve(fileURLToPath(new URL("../..", import.meta.url)));
-const SHARED_FILES = new Set([
-  "Cargo.toml",
-  "Cargo.lock",
-  "rust-toolchain",
-  "rust-toolchain.toml",
-]);
-const SHARED_PREFIXES = [".cargo/"];
-const ZERO_SHA = "0000000000000000000000000000000000000000";
 
 function parseArgs(argv) {
   const [command, ...rest] = argv;
@@ -26,36 +18,6 @@ function parseArgs(argv) {
   }
 
   return options;
-}
-
-function runGit(args, { allowFailure = false } = {}) {
-  try {
-    return execFileSync("git", args, {
-      cwd: ROOT,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-  } catch (error) {
-    if (allowFailure) {
-      return null;
-    }
-    throw new Error(error.stderr?.trim() || error.message);
-  }
-}
-
-function sectionBody(content, sectionName) {
-  const escaped = sectionName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const match = content.match(new RegExp(`^\\[${escaped}\\]\\s*([\\s\\S]*?)(?=^\\[[^\\]]+\\]\\s*$|$)`, "m"));
-  return match?.[1] ?? "";
-}
-
-function parsePackageVersion(content) {
-  const packageSection = sectionBody(content, "package");
-  const versionMatch = packageSection.match(/version\s*=\s*"([^"]+)"/m);
-  if (!versionMatch) {
-    throw new Error("Could not find [package].version in Cargo.toml");
-  }
-  return versionMatch[1];
 }
 
 function workspaceCrates() {
@@ -76,58 +38,6 @@ function workspaceCrates() {
       version: pkg.version,
     }))
     .sort((left, right) => left.crate.localeCompare(right.crate));
-}
-
-function changedFiles(baseSha, headSha, eventName) {
-  if (eventName === "workflow_dispatch") {
-    return { affectsAll: true, files: [] };
-  }
-
-  if (!baseSha || baseSha === ZERO_SHA) {
-    return { affectsAll: true, files: [] };
-  }
-
-  const files = runGit(["diff", "--name-only", baseSha, headSha])
-    .split("\n")
-    .map((value) => value.trim())
-    .filter(Boolean);
-
-  const affectsAll = files.some(
-    (path) => SHARED_FILES.has(path) || SHARED_PREFIXES.some((prefix) => path.startsWith(prefix)),
-  );
-
-  return { affectsAll, files };
-}
-
-function crateChanged(crateDir, files, affectsAll) {
-  if (affectsAll) {
-    return true;
-  }
-
-  return files.some((path) => path === crateDir || path.startsWith(`${crateDir}/`));
-}
-
-function buildPlan({ eventName, baseSha, beforeSha, headSha }) {
-  const crates = workspaceCrates();
-  const diffBase = baseSha || beforeSha || null;
-  const { affectsAll, files } = changedFiles(diffBase, headSha, eventName);
-
-  const testMatrix = [];
-  const publishMatrix = crates.map((crate) => crate.crate);
-
-  for (const crate of crates) {
-    const changed = crateChanged(crate.crate, files, affectsAll);
-    if (changed) {
-      testMatrix.push({ crate: crate.crate });
-    }
-  }
-
-  return {
-    hasTestCrates: testMatrix.length > 0,
-    hasPublishCrates: publishMatrix.length > 0,
-    testCrates: testMatrix.map((entry) => entry.crate),
-    publishCrates: publishMatrix,
-  };
 }
 
 function writeOutputs(outputPath, plan) {
@@ -157,6 +67,13 @@ function runCommand(command, args) {
 
 function registryTokenEnvName(registry) {
   return `CARGO_REGISTRIES_${registry.replace(/-/g, "_").toUpperCase()}_TOKEN`;
+}
+
+function configuredRegistries({ kellnrToken, cratesIoToken }) {
+  return [
+    cratesIoToken ? { registry: "crates-io", token: cratesIoToken } : null,
+    kellnrToken ? { registry: "kellnr", token: kellnrToken } : null,
+  ].filter(Boolean);
 }
 
 function runCommandCapture(command, args, { env = {} } = {}) {
@@ -241,6 +158,40 @@ function verifyCrateVersionInRegistry(crateInfo, registry, token) {
   return {
     state: classifyRegistryInfoResult(result),
     result,
+  };
+}
+
+function buildPlan({ kellnrToken, cratesIoToken }) {
+  const crates = workspaceCrates();
+  const registries = configuredRegistries({ kellnrToken, cratesIoToken });
+  const releaseCrates = [];
+
+  for (const crateInfo of crates) {
+    let shouldRelease = false;
+
+    for (const { registry, token } of registries) {
+      const verification = verifyCrateVersionInRegistry(crateInfo, registry, token);
+      console.log(formatVerificationSummary(crateInfo, registry, verification.state));
+
+      if (verification.state === "error") {
+        throw new Error(formatVerificationError(crateInfo, registry, verification.result));
+      }
+
+      if (verification.state === "missing") {
+        shouldRelease = true;
+      }
+    }
+
+    if (shouldRelease) {
+      releaseCrates.push(crateInfo.crate);
+    }
+  }
+
+  return {
+    hasTestCrates: releaseCrates.length > 0,
+    hasPublishCrates: releaseCrates.length > 0,
+    testCrates: releaseCrates,
+    publishCrates: releaseCrates,
   };
 }
 
@@ -340,10 +291,8 @@ function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.command === "plan") {
     const plan = buildPlan({
-      eventName: args.eventName,
-      baseSha: args.baseSha,
-      beforeSha: args.beforeSha,
-      headSha: args.headSha,
+      kellnrToken: args.kellnrToken,
+      cratesIoToken: args.cratesIoToken,
     });
 
     if (args.githubOutput) {
@@ -380,7 +329,9 @@ function main() {
 }
 
 export {
+  buildPlan,
   classifyRegistryInfoResult,
+  configuredRegistries,
   formatVerificationError,
   formatVerificationSummary,
   registryTokenEnvName,
