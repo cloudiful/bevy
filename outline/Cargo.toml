@@ -1,6 +1,6 @@
 [package]
 name = "cloudiful-bevy-outline"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2024"
 description = "Reusable geometry-shell outline plugin for Bevy."
 readme = "README.md"
