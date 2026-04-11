@@ -34,6 +34,17 @@ jobs:
             --before-sha "${{ github.event.before }}" \
             --github-output "$GITHUB_OUTPUT"
 
+      - name: Preview publish registry status
+        continue-on-error: true
+        env:
+          KELLNR_TOKEN: ${{ secrets.KELLNR_TOKEN }}
+          CRATESIO_TOKEN: ${{ secrets.CRATESIO_TOKEN }}
+        run: |
+          node scripts/ci/publish.mjs inspect-publish \
+            --crates-json '${{ steps.detect.outputs.publish_crates }}' \
+            --kellnr-token "$KELLNR_TOKEN" \
+            --crates-io-token "$CRATESIO_TOKEN"
+
   test:
     needs: detect_changes
     if: ${{ needs.detect_changes.outputs.has_test_crates == 'true' }}

@@ -271,6 +271,35 @@ function runMultiPublish(crates, { kellnrToken, cratesIoToken }) {
   }
 }
 
+function inspectRegistry(crates, { registry, token }) {
+  const workspaceByDir = new Map(workspaceCrates().map((crate) => [crate.crate, crate]));
+
+  for (const crate of crates) {
+    const crateInfo = workspaceByDir.get(crate);
+    if (!crateInfo) {
+      throw new Error(`Unknown workspace crate: ${crate}`);
+    }
+
+    const verification = verifyCrateVersionInRegistry(crateInfo, registry, token);
+    console.log(formatVerificationSummary(crateInfo, registry, verification.state));
+
+    if (verification.state === "error") {
+      console.error(formatVerificationError(crateInfo, registry, verification.result));
+    }
+  }
+}
+
+function runInspectPublish(crates, { kellnrToken, cratesIoToken }) {
+  inspectRegistry(crates, {
+    registry: "crates-io",
+    token: cratesIoToken,
+  });
+  inspectRegistry(crates, {
+    registry: "kellnr",
+    token: kellnrToken,
+  });
+}
+
 function runPublishToRegistry(crates, { registry, token }) {
   if (!token) {
     throw new Error(`Expected token for registry: ${registry}`);
@@ -339,7 +368,15 @@ function main() {
     return;
   }
 
-  throw new Error("Expected command: plan, test, or publish");
+  if (args.command === "inspectPublish" || args.command === "inspect-publish") {
+    runInspectPublish(parseCratesJson(args.cratesJson), {
+      kellnrToken: args.kellnrToken,
+      cratesIoToken: args.cratesIoToken,
+    });
+    return;
+  }
+
+  throw new Error("Expected command: plan, test, publish, or inspectPublish");
 }
 
 export {
