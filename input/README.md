@@ -23,7 +23,7 @@ This crate stays generic on purpose: the game defines actions, bindings, persist
 
 ## Minimal demo
 
-```rust
+```rust,no_run
 use bevy::input::gamepad::{GamepadAxis, GamepadButton};
 use bevy::input::keyboard::KeyCode;
 use bevy::prelude::*;
@@ -61,15 +61,15 @@ fn read_input(
     active_device: Res<ActiveInputDevice>,
 ) {
     if actions.just_pressed(Action::Jump) {
-        info!("jump");
+        println!("jump");
     }
 
     let movement = actions.value(Action::MoveX);
     if movement != 0.0 {
-        info!("move_x = {movement}");
+        println!("move_x = {movement}");
     }
 
-    info!("active device: {:?}", active_device.current());
+    println!("active device: {:?}", active_device.current());
 }
 ```
 
