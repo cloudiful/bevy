@@ -1,5 +1,5 @@
 [workspace]
-members = ["outline", "camera", "input", "localization"]
+members = ["outline", "camera", "input", "localization", "cloudiful-bevy-settings"]
 resolver = "2"
 
 [workspace.dependencies]
