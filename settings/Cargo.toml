@@ -1,6 +1,6 @@
 [package]
 name = "cloudiful-bevy-settings"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "Reusable Bevy settings runtime for app-defined actions, field keys, and localization context."
 readme = "README.md"
