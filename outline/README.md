@@ -28,7 +28,7 @@ This crate intentionally stays simple: it supports the common "draw a slightly e
 
 Add the plugin:
 
-```rust
+```rust,no_run
 use bevy::prelude::*;
 use cloudiful_bevy_outline::GpmoOutlinePlugin;
 
@@ -68,7 +68,7 @@ The full runnable example lives at [`examples/basic.rs`](./examples/basic.rs).
 
 Custom style example:
 
-```rust
+```rust,no_run
 use bevy::prelude::*;
 use cloudiful_bevy_outline::{GpmoOutlinePlugin, OutlineStyle};
 
