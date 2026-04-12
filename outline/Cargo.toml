@@ -13,3 +13,7 @@ categories = ["game-development", "graphics", "rendering"]
 
 [dependencies]
 bevy = { workspace = true, features = ["bevy_pbr"] }
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

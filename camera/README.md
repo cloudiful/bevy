@@ -105,7 +105,7 @@ use cloudiful_bevy_camera::CameraSwitched;
 
 fn observe_switches(mut switched: MessageReader<CameraSwitched>) {
     for event in switched.read() {
-        info!("camera changed: {:?} -> {:?}", event.previous, event.current);
+        println!("camera changed: {:?} -> {:?}", event.previous, event.current);
     }
 }
 ```
@@ -113,6 +113,8 @@ fn observe_switches(mut switched: MessageReader<CameraSwitched>) {
 ### `input_bindings` feature
 
 ```rust
+# #[cfg(feature = "input_bindings")]
+# {
 use bevy::prelude::*;
 use cloudiful_bevy_camera::{
     CameraGamepadBindings, CameraInputBindings, CameraInputBindingsPlugin,
@@ -149,6 +151,7 @@ fn spawn_camera(commands: &mut Commands) {
         },
     ));
 }
+# }
 ```
 
 Feature-disabled builds still compile only the core switching API.

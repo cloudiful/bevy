@@ -1,8 +1,8 @@
 [workspace]
-members = ["outline", "camera", "input", "localization", "cloudiful-bevy-settings"]
+members = ["outline", "camera", "input", "localization", "settings"]
 resolver = "2"
 
 [workspace.dependencies]
 bevy = { version = "0.18.1", default-features = false }
 serde = { version = "1.0.228", features = ["derive"] }
-toml = "1.1.0"
+toml = "1.1.2"

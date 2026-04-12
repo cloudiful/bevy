@@ -13,3 +13,7 @@ categories = ["game-development"]
 
 [dependencies]
 bevy = { workspace = true, features = ["keyboard", "gamepad", "bevy_gilrs"] }
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

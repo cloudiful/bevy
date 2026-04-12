@@ -14,7 +14,7 @@ published and consumed independently, while sharing a common Bevy baseline:
 | [`cloudiful-bevy-input`](./input/README.md) | Generic action-to-input mapping and action state runtime | You want your game to own the action enum while sharing keyboard/gamepad handling |
 | [`cloudiful-bevy-localization`](./localization/README.md) | Localization runtime for app-provided static registries | You generate locale/key definitions in your own app and need runtime lookup + validation |
 | [`cloudiful-bevy-outline`](./outline/README.md) | Geometry-shell outline helpers for 3D meshes | You want a small reusable backface-shell outline setup instead of a full render pass |
-| [`cloudiful-bevy-settings`](./cloudiful-bevy-settings/README.md) | Generic settings action/schema helpers wired for Bevy systems | You keep app-specific settings types and UI, but want reusable settings flow infrastructure |
+| [`cloudiful-bevy-settings`](./settings/README.md) | Generic settings action/schema helpers wired for Bevy systems | You keep app-specific settings types and UI, but want reusable settings flow infrastructure |
 
 ## Workspace Usage
 
@@ -43,4 +43,4 @@ Entry points:
 - input docs: [`input/README.md`](./input/README.md)
 - localization docs: [`localization/README.md`](./localization/README.md)
 - outline docs: [`outline/README.md`](./outline/README.md)
-- settings docs: [`cloudiful-bevy-settings/README.md`](./cloudiful-bevy-settings/README.md)
+- settings docs: [`settings/README.md`](./settings/README.md)

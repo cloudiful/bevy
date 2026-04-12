@@ -48,12 +48,22 @@ const SOURCES: &[LocaleSource] = &[
     LocaleSource {
         locale: "en-US",
         namespace: "common",
-        contents: r#"hello = "Hello""#,
+        contents: r#"
+hello = "Hello"
+[locale_name]
+en_us = "English"
+zh_cn = "Chinese"
+"#,
     },
     LocaleSource {
         locale: "zh-CN",
         namespace: "common",
-        contents: r#"hello = "你好""#,
+        contents: r#"
+hello = "你好"
+[locale_name]
+en_us = "英语"
+zh_cn = "中文"
+"#,
     },
 ];
 
@@ -84,7 +94,7 @@ use bevy::prelude::*;
 use cloudiful_bevy_localization::{Locale, Localization, TextKey};
 
 fn ui_text(mut localization: ResMut<Localization>) {
-    let text = localization.text(TextKey::new("common.hello"));
+    let text = localization.text(TextKey::new("common.hello")).to_string();
     let formatted = localization.format_text(TextKey::new("common.hello"), []);
 
     localization.set_locale(Locale::new("zh-CN"));

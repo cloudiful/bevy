@@ -1,3 +1,6 @@
+#![doc = include_str!("../README.md")]
+#![deny(rustdoc::broken_intra_doc_links)]
+
 mod definition;
 mod definition_registry;
 mod error;
@@ -7,13 +10,20 @@ mod localization;
 mod text_key;
 mod validation;
 
+/// Static locale sources and definitions supplied by the downstream app.
 pub use definition::{LocaleSource, LocalizationDefinition};
+/// Registers the active [`LocalizationDefinition`] for helper lookups.
 pub use definition_registry::register_definition;
+/// Error returned when loading or validating a [`LocalizationDefinition`].
 pub use error::LocalizationLoadError;
+/// Runtime locale handle used by [`Localization`].
 pub use locale::Locale;
+/// Main localization resource and plugin.
 pub use localization::{Localization, LocalizationPlugin};
+/// Runtime text-key handle used by [`Localization`].
 pub use text_key::TextKey;
 
+/// Returns the generated key id for a locale display name entry.
 pub fn locale_name_key_id(locale_id: &str) -> String {
     format!(
         "common.locale_name.{}",

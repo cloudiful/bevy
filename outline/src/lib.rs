@@ -1,7 +1,11 @@
+#![doc = include_str!("../README.md")]
+#![deny(rustdoc::broken_intra_doc_links)]
+
 use bevy::ecs::hierarchy::ChildSpawnerCommands;
 use bevy::prelude::*;
 use bevy::render::render_resource::Face;
 
+/// Plugin that creates the default outline material and [`OutlineAssets`].
 pub struct GpmoOutlinePlugin {
     default_style: OutlineStyle,
 }
@@ -15,11 +19,13 @@ impl Default for GpmoOutlinePlugin {
 }
 
 impl GpmoOutlinePlugin {
+    /// Creates the plugin with a custom default [`OutlineStyle`].
     pub fn with_default_style(default_style: OutlineStyle) -> Self {
         Self { default_style }
     }
 }
 
+/// Shared default outline material and style created by [`GpmoOutlinePlugin`].
 #[derive(Resource, Debug, Clone)]
 pub struct OutlineAssets {
     default_material: Handle<StandardMaterial>,
@@ -36,9 +42,11 @@ impl OutlineAssets {
     }
 }
 
+/// Marker component for spawned outline shell meshes.
 #[derive(Component, Debug, Clone, Copy)]
 pub struct OutlineShell;
 
+/// Visual parameters for a geometry-shell outline.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct OutlineStyle {
     pub color: Color,
@@ -67,6 +75,7 @@ impl Plugin for GpmoOutlinePlugin {
 #[derive(Resource, Debug, Clone, Copy)]
 struct PendingOutlineStyle(OutlineStyle);
 
+/// Creates a custom material for one outline style.
 pub fn create_outline_material(
     materials: &mut Assets<StandardMaterial>,
     style: OutlineStyle,
@@ -80,10 +89,12 @@ pub fn create_outline_material(
     })
 }
 
+/// Returns the shell transform derived from an [`OutlineStyle`].
 pub fn outline_shell_transform(style: OutlineStyle) -> Transform {
     Transform::from_scale(style.scale)
 }
 
+/// Spawns one outline shell child using an explicit material and style.
 pub fn spawn_outline_mesh<'a>(
     parent: &'a mut ChildSpawnerCommands,
     mesh: Handle<Mesh>,
@@ -100,6 +111,7 @@ pub fn spawn_outline_mesh<'a>(
     ))
 }
 
+/// Spawns one outline shell child using the shared [`OutlineAssets`].
 pub fn spawn_default_outline_mesh<'a>(
     parent: &'a mut ChildSpawnerCommands,
     outline_assets: &OutlineAssets,

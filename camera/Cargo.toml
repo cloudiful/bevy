@@ -17,3 +17,7 @@ input_bindings = ["bevy/keyboard", "bevy/gamepad", "bevy/bevy_gilrs"]
 
 [dependencies]
 bevy = { workspace = true, features = ["bevy_camera"] }
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
