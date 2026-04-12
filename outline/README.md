@@ -5,9 +5,14 @@ Small reusable Bevy outline helper crate for geometry-shell outlines.
 ## What it provides
 
 - `GpmoOutlinePlugin`: initializes default outline assets
+- `GpmoOutlinePlugin::with_default_style(...)`: installs a custom default
+  outline style
 - `OutlineStyle`: configurable color, emissive strength, and shell scale
 - `OutlineAssets`: default cached material/style resource
 - `OutlineShell`: marker component for spawned outline meshes
+- `create_outline_material(...)`: build a custom outline material from an
+  `OutlineStyle`
+- `outline_shell_transform(...)`: build the transform used for shell scaling
 - `spawn_outline_mesh(...)`: attach an outline mesh with a custom material/style
 - `spawn_default_outline_mesh(...)`: attach an outline mesh using the plugin's default style
 
@@ -30,7 +35,7 @@ use cloudiful_bevy_outline::GpmoOutlinePlugin;
 App::new().add_plugins((DefaultPlugins, GpmoOutlinePlugin::default()));
 ```
 
-Spawn an outline child:
+Spawn an outline child with the default material/style resource:
 
 ```rust
 use bevy::prelude::*;
@@ -46,6 +51,33 @@ fn attach_outline(
 ```
 
 Then toggle the outline child's `Visibility`.
+
+The full runnable example lives at [`examples/basic.rs`](./examples/basic.rs).
+
+## Default Style Flow
+
+`GpmoOutlinePlugin` creates one default material at startup and stores it in
+`OutlineAssets`.
+
+- use `OutlineAssets` when many outline shells can share one default look
+- use `GpmoOutlinePlugin::with_default_style(...)` when the whole app should
+  start with a different default style
+- use `create_outline_material(...)` when one outline needs its own material
+- use `outline_shell_transform(...)` when you need the shell scale without
+  spawning through the helper
+
+Custom style example:
+
+```rust
+use bevy::prelude::*;
+use cloudiful_bevy_outline::{GpmoOutlinePlugin, OutlineStyle};
+
+App::new().add_plugins(GpmoOutlinePlugin::with_default_style(OutlineStyle {
+    color: Color::srgb(1.0, 0.6, 0.2),
+    emissive_strength: 3.0,
+    scale: Vec3::splat(1.12),
+}));
+```
 
 ## Technique
 

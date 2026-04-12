@@ -73,6 +73,30 @@ fn read_input(
 }
 ```
 
+## Runtime Semantics
+
+`ActionState<A>` stores four values per action:
+
+- `pressed`
+- `just_pressed`
+- `just_released`
+- `value`
+
+`pressed` is threshold-based, not button-only. By default an action becomes
+pressed when `value.abs() >= 0.5`.
+
+`value` is the strongest absolute contribution from the action's bindings. If an
+action is bound to multiple inputs, the runtime keeps whichever binding has the
+largest absolute value for that frame.
+
+`InputSettings` controls those thresholds:
+
+- `action_press_threshold`: defaults to `0.5`
+- `axis_activity_threshold`: defaults to `0.2`
+
+The axis activity threshold only affects device-activity tracking. It does not
+clamp the stored action value.
+
 ## Rebinding
 
 ```rust
@@ -89,3 +113,43 @@ fn rebind_jump(map: &mut InputMap<Action>) {
     );
 }
 ```
+
+`rebind_button(...)` also updates `ButtonAxis` bindings when either side matches
+the old button. `rebind_gamepad_axis(...)` swaps a bound analog axis in place.
+
+## Primary Gamepad Selection
+
+`PrimaryGamepad` tracks which connected gamepad should drive gamepad bindings.
+
+- default mode is auto
+- auto mode selects the connected gamepad with the lowest entity index
+- `PrimaryGamepad::select(entity)` switches to manual mode
+- `PrimaryGamepad::clear_manual()` returns to auto mode
+- if the manually selected gamepad disappears, the selected gamepad becomes
+  `None`
+
+Manual selection example:
+
+```rust
+use bevy::prelude::Entity;
+use cloudiful_bevy_input::PrimaryGamepad;
+
+fn choose_primary(primary: &mut PrimaryGamepad, gamepad: Entity) {
+    primary.select(gamepad);
+}
+
+fn reset_primary(primary: &mut PrimaryGamepad) {
+    primary.clear_manual();
+}
+```
+
+## Active Device Tracking
+
+`ActiveInputDevice` records the last active source that crossed the configured
+activity threshold:
+
+- `InputDevice::KeyboardMouse`
+- `InputDevice::Gamepad(Entity)`
+
+Keyboard/mouse activity wins first in frames where both keyboard and gamepad
+activity are detected. If no binding is active, the previous value is retained.

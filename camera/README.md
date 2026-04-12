@@ -29,6 +29,16 @@ It stays generic on purpose:
 - no primary-device selection
 - no UI/business-state gating
 
+## Participation Rules
+
+Only entities that have both:
+
+- `SwitchableCamera`
+- `Camera`
+
+participate in switching. A request targeting a plain `Camera`, a plain
+`SwitchableCamera`, or any unrelated entity is ignored.
+
 ## Stable ordering
 
 Candidates always sort by:
@@ -38,6 +48,27 @@ Candidates always sort by:
 3. entity index
 
 That same ordering drives cycle behavior and repeated-slot tie breaking.
+
+## Request Semantics
+
+`SwitchCameraRequest` supports four operations:
+
+- `ToEntity(Entity)`: switch to the matching switchable camera entity
+- `ToSlot(u8)`: switch to the first ordered camera with that slot
+- `CycleNext`: move forward through the ordered camera list
+- `CyclePrev`: move backward through the ordered camera list
+
+Behavior details:
+
+- missing targets are a no-op
+- cycling with no active camera selects the first ordered candidate
+- switching to the already uniquely active camera is a no-op
+- if multiple cameras are active, the next valid switch collapses them down to
+  one active camera
+- `CameraSwitched.previous` is `Some(entity)` only when there was exactly one
+  active camera before the switch
+- when a switch request succeeds, the target camera becomes the only active
+  switchable camera
 
 ## Usage
 
@@ -63,6 +94,19 @@ fn spawn_camera(commands: &mut Commands) {
 
 fn request_camera(mut requests: MessageWriter<SwitchCameraRequest>) {
     requests.write(SwitchCameraRequest::ToSlot(1));
+}
+```
+
+Listen for successful switches:
+
+```rust
+use bevy::prelude::*;
+use cloudiful_bevy_camera::CameraSwitched;
+
+fn observe_switches(mut switched: MessageReader<CameraSwitched>) {
+    for event in switched.read() {
+        info!("camera changed: {:?} -> {:?}", event.previous, event.current);
+    }
 }
 ```
 
@@ -108,3 +152,14 @@ fn spawn_camera(commands: &mut Commands) {
 ```
 
 Feature-disabled builds still compile only the core switching API.
+
+`CameraInputBindingsPlugin` emits `SwitchCameraRequest` messages from generic
+keyboard/gamepad bindings before the core switch application runs.
+
+Input-layer details:
+
+- keyboard slot bindings use the first matching `just_pressed` key
+- `next` and `prev` are checked after direct slot bindings
+- gamepad checks run only if `CameraInputBindings.gamepad` is configured
+- gamepad bindings match any connected gamepad; this feature does not pick a
+  primary device
