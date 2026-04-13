@@ -40,7 +40,7 @@ flow and the system ordering around persistent settings updates.
 
 ## Minimal end-to-end example
 
-```rust,no_run
+```rust
 use bevy::prelude::*;
 use bevy_persistent::{Persistent, StorageFormat};
 use cloudiful_bevy_settings::{
@@ -138,6 +138,12 @@ fn main() {
         change_setting::<AppSettings, SettingsAction, UiSettingRequest, AppAction>,
         sync_ui,
     );
+
+    app.update();
+
+    let settings = app.world().resource::<Persistent<AppSettings>>();
+    assert!(!settings.get().fullscreen);
+    assert_eq!(settings.get().ui_scale, 1.0);
 }
 ```
 

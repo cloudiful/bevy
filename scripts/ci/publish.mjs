@@ -198,7 +198,10 @@ function buildPlan({ kellnrToken, cratesIoToken }) {
 function runTests(crates) {
   for (const crate of crates) {
     runCommand("cargo", ["test", "--manifest-path", `${crate}/Cargo.toml`]);
+    runCommand("cargo", ["test", "--manifest-path", `${crate}/Cargo.toml`, "--all-features", "--lib", "--tests"]);
+    runCommand("cargo", ["test", "--manifest-path", `${crate}/Cargo.toml`, "--doc", "--all-features"]);
     runCommand("cargo", ["check", "--manifest-path", `${crate}/Cargo.toml`, "--examples"]);
+    runCommand("cargo", ["check", "--manifest-path", `${crate}/Cargo.toml`, "--examples", "--all-features"]);
   }
 }
 

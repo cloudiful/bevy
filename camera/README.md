@@ -80,7 +80,7 @@ use cloudiful_bevy_camera::{
     CameraSwitchPlugin, SwitchCameraRequest, SwitchableCamera,
 };
 
-App::new().add_plugins((DefaultPlugins, CameraSwitchPlugin));
+App::new().add_plugins(CameraSwitchPlugin);
 
 fn spawn_camera(commands: &mut Commands) {
     commands.spawn((
@@ -123,7 +123,6 @@ use cloudiful_bevy_camera::{
 
 App::new()
     .add_plugins((
-        DefaultPlugins,
         CameraSwitchPlugin,
         CameraInputBindingsPlugin,
     ))

@@ -28,11 +28,16 @@ This crate intentionally stays simple: it supports the common "draw a slightly e
 
 Add the plugin:
 
-```rust,no_run
+```rust
 use bevy::prelude::*;
-use cloudiful_bevy_outline::GpmoOutlinePlugin;
+use cloudiful_bevy_outline::{GpmoOutlinePlugin, OutlineAssets};
 
-App::new().add_plugins((DefaultPlugins, GpmoOutlinePlugin::default()));
+let mut app = App::new();
+app.init_resource::<Assets<StandardMaterial>>()
+    .add_plugins(GpmoOutlinePlugin::default());
+app.update();
+
+assert!(app.world().contains_resource::<OutlineAssets>());
 ```
 
 Spawn an outline child with the default material/style resource:
@@ -68,15 +73,21 @@ The full runnable example lives at [`examples/basic.rs`](./examples/basic.rs).
 
 Custom style example:
 
-```rust,no_run
+```rust
 use bevy::prelude::*;
-use cloudiful_bevy_outline::{GpmoOutlinePlugin, OutlineStyle};
+use cloudiful_bevy_outline::{GpmoOutlinePlugin, OutlineAssets, OutlineStyle};
 
-App::new().add_plugins(GpmoOutlinePlugin::with_default_style(OutlineStyle {
-    color: Color::srgb(1.0, 0.6, 0.2),
-    emissive_strength: 3.0,
-    scale: Vec3::splat(1.12),
-}));
+let mut app = App::new();
+app.init_resource::<Assets<StandardMaterial>>()
+    .add_plugins(GpmoOutlinePlugin::with_default_style(OutlineStyle {
+        color: Color::srgb(1.0, 0.6, 0.2),
+        emissive_strength: 3.0,
+        scale: Vec3::splat(1.12),
+    }));
+app.update();
+
+let outline_assets = app.world().resource::<OutlineAssets>();
+assert_eq!(outline_assets.default_style().emissive_strength, 3.0);
 ```
 
 ## Technique

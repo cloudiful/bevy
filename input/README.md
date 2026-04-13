@@ -23,12 +23,12 @@ This crate stays generic on purpose: the game defines actions, bindings, persist
 
 ## Minimal demo
 
-```rust,no_run
+```rust
 use bevy::input::gamepad::{GamepadAxis, GamepadButton};
 use bevy::input::keyboard::KeyCode;
 use bevy::prelude::*;
 use cloudiful_bevy_input::{
-    ActionState, ActiveInputDevice, InputBindingsPlugin, InputButton, InputMap,
+    InputBinding, InputBindingsPlugin, InputButton, InputMap,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -38,11 +38,30 @@ enum Action {
 }
 
 fn main() {
-    App::new()
-        .add_plugins((DefaultPlugins, InputBindingsPlugin::<Action>::default()))
-        .add_systems(Startup, setup_bindings)
-        .add_systems(Update, read_input)
-        .run();
+    let mut app = App::new();
+    app.add_plugins(InputBindingsPlugin::<Action>::default())
+        .add_systems(Startup, setup_bindings);
+
+    app.update();
+
+    let map = app.world().resource::<InputMap<Action>>();
+    assert!(matches!(
+        map.bindings(Action::Jump),
+        [
+            InputBinding::Button(InputButton::Key(KeyCode::Space)),
+            InputBinding::Button(InputButton::Gamepad(GamepadButton::South)),
+        ]
+    ));
+    assert!(matches!(
+        map.bindings(Action::MoveX),
+        [
+            InputBinding::ButtonAxis {
+                negative: InputButton::Key(KeyCode::KeyA),
+                positive: InputButton::Key(KeyCode::KeyD),
+            },
+            InputBinding::GamepadAxis(GamepadAxis::LeftStickX),
+        ]
+    ));
 }
 
 fn setup_bindings(mut map: ResMut<InputMap<Action>>) {
@@ -56,21 +75,6 @@ fn setup_bindings(mut map: ResMut<InputMap<Action>>) {
         .bind_gamepad_axis(Action::MoveX, GamepadAxis::LeftStickX);
 }
 
-fn read_input(
-    actions: Res<ActionState<Action>>,
-    active_device: Res<ActiveInputDevice>,
-) {
-    if actions.just_pressed(Action::Jump) {
-        println!("jump");
-    }
-
-    let movement = actions.value(Action::MoveX);
-    if movement != 0.0 {
-        println!("move_x = {movement}");
-    }
-
-    println!("active device: {:?}", active_device.current());
-}
 ```
 
 ## Runtime Semantics
