@@ -46,7 +46,7 @@ jobs:
 
   publish:
     needs: [detect_changes, test]
-    if: ${{ always() && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && needs.detect_changes.outputs.has_publish_crates == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped') }}
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.detect_changes.outputs.has_publish_crates == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped') }}
     runs-on: rust
     name: publish
     steps:
@@ -59,12 +59,12 @@ jobs:
       - name: Publish changed crates to Kellnr
         env:
           KELLNR_TOKEN: ${{ secrets.KELLNR_TOKEN }}
+          CRATES_JSON: ${{ needs.detect_changes.outputs.publish_crates }}
         run: |
           if [ -z "$KELLNR_TOKEN" ]; then
             echo "Missing secret: KELLNR_TOKEN"
             exit 1
           fi
-          node scripts/ci/publish.mjs publish \
-            --registry kellnr \
-            --crates-json '${{ needs.detect_changes.outputs.publish_crates }}' \
-            --kellnr-token "$KELLNR_TOKEN"
+          for crate in $(node -e 'for (const crate of JSON.parse(process.env.CRATES_JSON ?? "[]")) console.log(crate)'); do
+            cargo publish --manifest-path "$crate/Cargo.toml" --registry kellnr --token "$KELLNR_TOKEN"
+          done

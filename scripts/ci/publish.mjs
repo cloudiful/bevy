@@ -246,16 +246,6 @@ function runTests(crates) {
   }
 }
 
-function runMultiPublish(crates, { kellnrToken, cratesIoToken, registry }) {
-  if (!kellnrToken && !cratesIoToken) {
-    throw new Error("Expected at least one publish token");
-  }
-
-  for (const configuredRegistry of configuredRegistries({ kellnrToken, cratesIoToken, registry })) {
-    runPublishToRegistry(crates, configuredRegistry);
-  }
-}
-
 function inspectRegistry(crates, { registry, token }) {
   const workspaceByDir = new Map(workspaceCrates().map((crate) => [crate.crate, crate]));
 
@@ -277,42 +267,6 @@ function inspectRegistry(crates, { registry, token }) {
 function runInspectPublish(crates, { kellnrToken, cratesIoToken, registry }) {
   for (const configuredRegistry of configuredRegistries({ kellnrToken, cratesIoToken, registry })) {
     inspectRegistry(crates, configuredRegistry);
-  }
-}
-
-function runPublishToRegistry(crates, { registry, token }) {
-  if (!token) {
-    throw new Error(`Expected token for registry: ${registry}`);
-  }
-
-  const workspaceByDir = new Map(workspaceCrates().map((crate) => [crate.crate, crate]));
-
-  for (const crate of crates) {
-    const crateInfo = workspaceByDir.get(crate);
-    if (!crateInfo) {
-      throw new Error(`Unknown workspace crate: ${crate}`);
-    }
-
-    const verification = verifyCrateVersionInRegistry(crateInfo, registry, token);
-    console.log(formatVerificationSummary(crateInfo, registry, verification.state));
-
-    if (verification.state === "exists") {
-      continue;
-    }
-
-    if (verification.state === "error") {
-      throw new Error(formatVerificationError(crateInfo, registry, verification.result));
-    }
-
-    runCommand("cargo", [
-      "publish",
-      "--manifest-path",
-      `${crate}/Cargo.toml`,
-      "--registry",
-      registry,
-      "--token",
-      token,
-    ]);
   }
 }
 
@@ -339,15 +293,6 @@ function main() {
     return;
   }
 
-  if (args.command === "publish") {
-    runMultiPublish(parseCratesJson(args.cratesJson), {
-      kellnrToken: args.kellnrToken,
-      cratesIoToken: args.cratesIoToken,
-      registry: args.registry,
-    });
-    return;
-  }
-
   if (args.command === "inspectPublish" || args.command === "inspect-publish") {
     runInspectPublish(parseCratesJson(args.cratesJson), {
       kellnrToken: args.kellnrToken,
@@ -357,7 +302,7 @@ function main() {
     return;
   }
 
-  throw new Error("Expected command: plan, test, publish, or inspectPublish");
+  throw new Error("Expected command: plan, test, or inspectPublish");
 }
 
 export {
