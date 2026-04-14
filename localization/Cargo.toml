@@ -1,6 +1,6 @@
 [package]
 name = "cloudiful-bevy-localization"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 description = "Reusable Bevy localization runtime built around app-provided static registries."
 readme = "README.md"

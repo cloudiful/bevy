@@ -33,12 +33,9 @@ jobs:
 
       - name: Build crate matrix
         id: detect
-        env:
-          CRATESIO_TOKEN: ${{ secrets.CRATESIO_TOKEN }}
         run: |
           node scripts/ci/publish.mjs plan \
             --registry crates-io \
-            --crates-io-token "$CRATESIO_TOKEN" \
             --github-output "$GITHUB_OUTPUT"
 
   test:
@@ -65,7 +62,16 @@ jobs:
     needs: [detect_changes, test]
     if: ${{ needs.detect_changes.outputs.has_publish_crates == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped') }}
     runs-on: ubuntu-latest
-    name: publish
+    name: publish (${{ matrix.crate }})
+    permissions:
+      contents: read
+      id-token: write
+    environment:
+      name: crates-io
+    strategy:
+      fail-fast: false
+      matrix:
+        crate: ${{ fromJson(needs.detect_changes.outputs.publish_crates) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -76,15 +82,12 @@ jobs:
       - name: Restore Rust cache
         uses: Swatinem/rust-cache@v2
 
-      - name: Publish changed crates to crates.io
-        env:
-          CRATESIO_TOKEN: ${{ secrets.CRATESIO_TOKEN }}
-        run: |
-          if [ -z "$CRATESIO_TOKEN" ]; then
-            echo "Missing secret: CRATESIO_TOKEN"
-            exit 1
-          fi
-          node scripts/ci/publish.mjs publish \
-            --registry crates-io \
-            --crates-json '${{ needs.detect_changes.outputs.publish_crates }}' \
-            --crates-io-token "$CRATESIO_TOKEN"
+      - name: Verify package contents
+        run: cargo package --manifest-path "${{ matrix.crate }}/Cargo.toml" --allow-dirty
+
+      - name: Authenticate with crates.io
+        id: auth
+        uses: rust-lang/crates-io-auth-action@v1
+
+      - name: Publish crate to crates.io
+        run: cargo publish --manifest-path "${{ matrix.crate }}/Cargo.toml" --token "${{ steps.auth.outputs.token }}"

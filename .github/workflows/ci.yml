@@ -26,12 +26,9 @@ jobs:
 
       - name: Build crate matrix
         id: detect
-        env:
-          CRATESIO_TOKEN: ${{ secrets.CRATESIO_TOKEN }}
         run: |
           node scripts/ci/publish.mjs plan \
             --registry crates-io \
-            --crates-io-token "$CRATESIO_TOKEN" \
             --github-output "$GITHUB_OUTPUT"
 
   test:
