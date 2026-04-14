@@ -1,13 +1,21 @@
-name: CI
+name: Publish
 
 on:
   push:
-  pull_request:
+    branches:
+      - main
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   detect_changes:
-    runs-on: rust
+    runs-on: ubuntu-latest
     outputs:
       has_test_crates: ${{ steps.detect.outputs.has_test_crates }}
       has_publish_crates: ${{ steps.detect.outputs.has_publish_crates }}
@@ -17,24 +25,33 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Restore Rust cache
+        uses: Swatinem/rust-cache@v2
+
       - name: Build crate matrix
         id: detect
         env:
-          KELLNR_TOKEN: ${{ secrets.KELLNR_TOKEN }}
+          CRATESIO_TOKEN: ${{ secrets.CRATESIO_TOKEN }}
         run: |
           node scripts/ci/publish.mjs plan \
-            --registry kellnr \
-            --kellnr-token "$KELLNR_TOKEN" \
+            --registry crates-io \
+            --crates-io-token "$CRATESIO_TOKEN" \
             --github-output "$GITHUB_OUTPUT"
 
   test:
     needs: detect_changes
     if: ${{ needs.detect_changes.outputs.has_test_crates == 'true' }}
-    runs-on: rust
+    runs-on: ubuntu-latest
     name: test
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Restore Rust cache
         uses: Swatinem/rust-cache@v2
@@ -46,25 +63,28 @@ jobs:
 
   publish:
     needs: [detect_changes, test]
-    if: ${{ always() && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && needs.detect_changes.outputs.has_publish_crates == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped') }}
-    runs-on: rust
+    if: ${{ needs.detect_changes.outputs.has_publish_crates == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped') }}
+    runs-on: ubuntu-latest
     name: publish
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
       - name: Restore Rust cache
         uses: Swatinem/rust-cache@v2
 
-      - name: Publish changed crates to Kellnr
+      - name: Publish changed crates to crates.io
         env:
-          KELLNR_TOKEN: ${{ secrets.KELLNR_TOKEN }}
+          CRATESIO_TOKEN: ${{ secrets.CRATESIO_TOKEN }}
         run: |
-          if [ -z "$KELLNR_TOKEN" ]; then
-            echo "Missing secret: KELLNR_TOKEN"
+          if [ -z "$CRATESIO_TOKEN" ]; then
+            echo "Missing secret: CRATESIO_TOKEN"
             exit 1
           fi
           node scripts/ci/publish.mjs publish \
-            --registry kellnr \
+            --registry crates-io \
             --crates-json '${{ needs.detect_changes.outputs.publish_crates }}' \
-            --kellnr-token "$KELLNR_TOKEN"
+            --crates-io-token "$CRATESIO_TOKEN"

@@ -3,8 +3,11 @@ import assert from "node:assert/strict";
 
 import {
   classifyRegistryInfoResult,
+  configuredRegistries,
   formatVerificationError,
   formatVerificationSummary,
+  normalizeRequestedRegistries,
+  registryRequiresToken,
   registryTokenEnvName,
 } from "./publish.mjs";
 
@@ -85,4 +88,43 @@ test("formatVerificationSummary includes local version registry state and decisi
 
 test("registryTokenEnvName normalizes dashed registries", () => {
   assert.equal(registryTokenEnvName("crates-io"), "CARGO_REGISTRIES_CRATES_IO_TOKEN");
+});
+
+test("normalizeRequestedRegistries returns all registries by default", () => {
+  assert.deepEqual(normalizeRequestedRegistries(), ["crates-io", "kellnr"]);
+});
+
+test("configuredRegistries filters to the requested registry", () => {
+  assert.deepEqual(
+    configuredRegistries({
+      registry: "kellnr",
+      kellnrToken: "secret",
+      cratesIoToken: "unused",
+    }),
+    [{ registry: "kellnr", token: "secret" }],
+  );
+});
+
+test("registryRequiresToken only requires auth for Kellnr", () => {
+  assert.equal(registryRequiresToken("crates-io"), false);
+  assert.equal(registryRequiresToken("kellnr"), true);
+});
+
+test("configuredRegistries allows explicit crates-io plans without a token", () => {
+  assert.deepEqual(
+    configuredRegistries({
+      registry: "crates-io",
+    }),
+    [{ registry: "crates-io", token: undefined }],
+  );
+});
+
+test("configuredRegistries requires a token for explicit Kellnr plans", () => {
+  assert.throws(
+    () =>
+      configuredRegistries({
+        registry: "kellnr",
+      }),
+    /Expected token for registry: kellnr/,
+  );
 });

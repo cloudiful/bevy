@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 
 const ROOT = resolve(fileURLToPath(new URL("../..", import.meta.url)));
+const SUPPORTED_REGISTRIES = ["crates-io", "kellnr"];
 
 function parseArgs(argv) {
   const [command, ...rest] = argv;
@@ -69,11 +70,51 @@ function registryTokenEnvName(registry) {
   return `CARGO_REGISTRIES_${registry.replace(/-/g, "_").toUpperCase()}_TOKEN`;
 }
 
-function configuredRegistries({ kellnrToken, cratesIoToken }) {
-  return [
-    cratesIoToken ? { registry: "crates-io", token: cratesIoToken } : null,
-    kellnrToken ? { registry: "kellnr", token: kellnrToken } : null,
-  ].filter(Boolean);
+function normalizeRequestedRegistries(registry) {
+  if (!registry || registry === "all") {
+    return SUPPORTED_REGISTRIES;
+  }
+
+  if (SUPPORTED_REGISTRIES.includes(registry)) {
+    return [registry];
+  }
+
+  throw new Error(`Unsupported registry: ${registry}`);
+}
+
+function registryToken(registry, { kellnrToken, cratesIoToken }) {
+  if (registry === "crates-io") {
+    return cratesIoToken;
+  }
+
+  if (registry === "kellnr") {
+    return kellnrToken;
+  }
+
+  throw new Error(`Unsupported registry: ${registry}`);
+}
+
+function registryRequiresToken(registry) {
+  return registry === "kellnr";
+}
+
+function configuredRegistries({ kellnrToken, cratesIoToken, registry }) {
+  const registries = normalizeRequestedRegistries(registry).map((registry) => ({
+    registry,
+    token: registryToken(registry, { kellnrToken, cratesIoToken }),
+  }));
+
+  if (registry && registry !== "all") {
+    for (const { registry, token } of registries) {
+      if (registryRequiresToken(registry) && !token) {
+        throw new Error(`Expected token for registry: ${registry}`);
+      }
+    }
+
+    return registries;
+  }
+
+  return registries.filter(({ token }) => Boolean(token));
 }
 
 function runCommandCapture(command, args, { env = {} } = {}) {
@@ -161,9 +202,9 @@ function verifyCrateVersionInRegistry(crateInfo, registry, token) {
   };
 }
 
-function buildPlan({ kellnrToken, cratesIoToken }) {
+function buildPlan({ kellnrToken, cratesIoToken, registry }) {
   const crates = workspaceCrates();
-  const registries = configuredRegistries({ kellnrToken, cratesIoToken });
+  const registries = configuredRegistries({ kellnrToken, cratesIoToken, registry });
   const releaseCrates = [];
 
   for (const crateInfo of crates) {
@@ -205,23 +246,13 @@ function runTests(crates) {
   }
 }
 
-function runMultiPublish(crates, { kellnrToken, cratesIoToken }) {
+function runMultiPublish(crates, { kellnrToken, cratesIoToken, registry }) {
   if (!kellnrToken && !cratesIoToken) {
     throw new Error("Expected at least one publish token");
   }
 
-  if (cratesIoToken) {
-    runPublishToRegistry(crates, {
-      registry: "crates-io",
-      token: cratesIoToken,
-    });
-  }
-
-  if (kellnrToken) {
-    runPublishToRegistry(crates, {
-      registry: "kellnr",
-      token: kellnrToken,
-    });
+  for (const configuredRegistry of configuredRegistries({ kellnrToken, cratesIoToken, registry })) {
+    runPublishToRegistry(crates, configuredRegistry);
   }
 }
 
@@ -243,15 +274,10 @@ function inspectRegistry(crates, { registry, token }) {
   }
 }
 
-function runInspectPublish(crates, { kellnrToken, cratesIoToken }) {
-  inspectRegistry(crates, {
-    registry: "crates-io",
-    token: cratesIoToken,
-  });
-  inspectRegistry(crates, {
-    registry: "kellnr",
-    token: kellnrToken,
-  });
+function runInspectPublish(crates, { kellnrToken, cratesIoToken, registry }) {
+  for (const configuredRegistry of configuredRegistries({ kellnrToken, cratesIoToken, registry })) {
+    inspectRegistry(crates, configuredRegistry);
+  }
 }
 
 function runPublishToRegistry(crates, { registry, token }) {
@@ -296,6 +322,7 @@ function main() {
     const plan = buildPlan({
       kellnrToken: args.kellnrToken,
       cratesIoToken: args.cratesIoToken,
+      registry: args.registry,
     });
 
     if (args.githubOutput) {
@@ -316,6 +343,7 @@ function main() {
     runMultiPublish(parseCratesJson(args.cratesJson), {
       kellnrToken: args.kellnrToken,
       cratesIoToken: args.cratesIoToken,
+      registry: args.registry,
     });
     return;
   }
@@ -324,6 +352,7 @@ function main() {
     runInspectPublish(parseCratesJson(args.cratesJson), {
       kellnrToken: args.kellnrToken,
       cratesIoToken: args.cratesIoToken,
+      registry: args.registry,
     });
     return;
   }
@@ -337,6 +366,8 @@ export {
   configuredRegistries,
   formatVerificationError,
   formatVerificationSummary,
+  normalizeRequestedRegistries,
+  registryRequiresToken,
   registryTokenEnvName,
 };
 
