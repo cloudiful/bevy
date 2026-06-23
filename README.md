@@ -4,7 +4,12 @@ Reusable Bevy crates collected in a single workspace.
 
 This repository is not a single umbrella runtime crate. Each workspace member is
 published and consumed independently, while sharing a common Bevy baseline:
-`0.18.1`.
+`0.19.0`.
+
+The workspace examples and APIs follow Bevy 0.19 conventions such as messages
+(`MessageReader` / `MessageWriter`), component-based rendering setup
+(`Camera3d`, `Mesh3d`, `MeshMaterial3d`), and updated light configuration in
+examples.
 
 ## Crates
 
