@@ -7,7 +7,9 @@ locale registry at build time.
 
 - `LocalizationDefinition`: static description of fallback locale, supported
   locales, locale sources, and declared keys
-- `LocaleSource`: one TOML payload bound to a locale + namespace
+- `LocaleSource`: one payload bound to a locale + namespace, tagged with an
+  explicit `LocaleSourceFormat`, built with `new`/`toml`/`json`/`yaml`
+- `LocaleSourceFormat`: explicit `Toml`, `Json`, or `Yaml` payload selector
 - `Locale`: runtime locale handle with serialization support
 - `TextKey`: runtime text key handle with serialization support
 - `Localization`: Bevy resource for lookup, formatting, locale switching, and
@@ -39,32 +41,29 @@ the `Localization` resource built from that definition.
 ```rust
 use bevy::prelude::*;
 use cloudiful_bevy_localization::{
-    Locale, LocaleSource, Localization, LocalizationDefinition,
-    LocalizationPlugin, TextKey,
+    Locale, LocaleSource, Localization, LocalizationDefinition, LocalizationPlugin, TextKey,
 };
 
 const KEYS: &[TextKey] = &[TextKey::new("common.hello")];
 const SOURCES: &[LocaleSource] = &[
-    LocaleSource {
-        locale: "en-US",
-        namespace: "common",
-        contents: r#"
+    LocaleSource::toml(
+        "en-US",
+        "common",
+        r#"
 hello = "Hello"
 [locale_name]
 en_us = "English"
 zh_cn = "Chinese"
 "#,
-    },
-    LocaleSource {
-        locale: "zh-CN",
-        namespace: "common",
-        contents: r#"
-hello = "你好"
-[locale_name]
-en_us = "英语"
-zh_cn = "中文"
-"#,
-    },
+    ),
+    LocaleSource::json(
+        "zh-CN",
+        "common",
+        r#"{
+  "hello": "你好",
+  "locale_name": { "en_us": "英语", "zh_cn": "中文" }
+}"#,
+    ),
 ];
 
 static LOCALIZATION: LocalizationDefinition = LocalizationDefinition {
@@ -119,17 +118,71 @@ broken:
 - a locale table contains keys that are not declared
 - placeholder names differ from the fallback locale for the same key
 - a locale source references a locale not listed in `LocalizationDefinition`
-- a TOML value is not a string or nested table
-- the same flattened key appears more than once
+- a source value is not a string or nested table (numbers, booleans, arrays,
+  nulls, and tagged YAML values are rejected)
+- a YAML mapping key is not a string (JSON object keys are always strings)
+- the same flattened key appears more than once, whether across sources or
+  inside one source where the format's parser reports it
 
-`LocaleSource.contents` TOML is flattened by namespace, so:
+`LocaleSource.contents` is flattened by namespace, so this TOML:
 
 ```toml
 [nested]
 label = "Nested"
 ```
 
-under namespace `common` becomes `common.nested.label`.
+under namespace `common` becomes `common.nested.label`. The same flattening
+applies to JSON and YAML payloads selected through `LocaleSourceFormat`.
+
+## Serialization Formats
+
+Every source declares its format explicitly; the loader never guesses from the
+payload text. TOML, JSON, and YAML all lower into the same flattened
+`String -> String` tables, so key lookups and placeholder validation behave
+identically across formats. `LocaleSource` offers `toml(...)`, `json(...)`,
+`yaml(...)`, and the explicit `new(..., format, ...)` constructor.
+
+```rust
+use cloudiful_bevy_localization::{LocaleSource, LocaleSourceFormat};
+
+const SOURCES: &[LocaleSource] = &[
+    LocaleSource::json(
+        "en-US",
+        "common",
+        r#"{
+  "hello": "Hello",
+  "locale_name": { "en_us": "English" }
+}"#,
+    ),
+    LocaleSource::yaml(
+        "zh-CN",
+        "common",
+        r#"
+hello: "你好"
+locale_name:
+  en_us: "英语"
+"#,
+    ),
+    // Explicit form, equivalent to the convenience constructors above.
+    LocaleSource::new(
+        "ja-JP",
+        "common",
+        LocaleSourceFormat::Toml,
+        "hello = \"こんにちは\"\n[locale_name]\nen_us = \"英語\"\n",
+    ),
+];
+```
+
+Parse failures are reported with the offending format, for example
+`failed to parse localization JSON: ...`. Use
+`LocalizationLoadError::source_format()` to branch on the format in code, and
+`LocaleSourceFormat::as_str()` for the `"TOML"`, `"JSON"`, or `"YAML"` label used
+in messages. Duplicate keys inside one JSON or YAML object are reported as a
+parse error for that format instead of silently keeping the last value.
+
+YAML parsing uses [`yaml_serde`](https://crates.io/crates/yaml_serde), the
+maintained continuation of the `serde_yaml` API. TOML remains the lowest-risk
+choice, but all three formats are first-class for locale sources.
 
 ## Runtime Behavior
 
@@ -153,3 +206,11 @@ under namespace `common` becomes `common.nested.label`.
   serialized locale ids
 - `TextKey::from_id(...)` resolves an id against the active registered
   definition
+
+## Migration
+
+`LocaleSource` gained a required `format` field (0.3.0). Add
+`format: LocaleSourceFormat::Toml` to existing TOML sources to keep previous
+behavior; TOML parsing, flattening, duplicate detection, and unknown-value
+rejection are unchanged. JSON and YAML sources are new in 0.3.0 and follow the
+same rules.

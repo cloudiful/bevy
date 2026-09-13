@@ -13,10 +13,10 @@ pub(crate) fn sync_primary_gamepad(
     let mut connected = gamepads.iter().collect::<Vec<_>>();
     connected.sort_unstable_by_key(|entity| entity.index());
 
-    if let Some(selected) = primary.selected() {
-        if connected.contains(&selected) {
-            return;
-        }
+    if let Some(selected) = primary.selected()
+        && connected.contains(&selected)
+    {
+        return;
     }
 
     match primary.mode() {

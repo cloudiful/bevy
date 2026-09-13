@@ -6,16 +6,9 @@ use bevy::prelude::*;
 use bevy::render::render_resource::Face;
 
 /// Plugin that creates the default outline material and [`OutlineAssets`].
+#[derive(Default)]
 pub struct GpmoOutlinePlugin {
     default_style: OutlineStyle,
-}
-
-impl Default for GpmoOutlinePlugin {
-    fn default() -> Self {
-        Self {
-            default_style: OutlineStyle::default(),
-        }
-    }
 }
 
 impl GpmoOutlinePlugin {

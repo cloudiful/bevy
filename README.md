@@ -4,7 +4,7 @@ Reusable Bevy crates collected in a single workspace.
 
 This repository is not a single umbrella runtime crate. Each workspace member is
 published and consumed independently, while sharing a common Bevy baseline:
-`0.19.0`.
+`0.19.1`.
 
 The workspace examples and APIs follow Bevy 0.19 conventions such as messages
 (`MessageReader` / `MessageWriter`), component-based rendering setup
@@ -17,9 +17,9 @@ examples.
 | --- | --- | --- |
 | [`cloudiful-bevy-camera`](./camera/README.md) | Camera switching core, with optional generic input bindings | You need stable camera slot/entity switching without coupling it to game-specific state |
 | [`cloudiful-bevy-input`](./input/README.md) | Generic action-to-input mapping and action state runtime | You want your game to own the action enum while sharing keyboard/gamepad handling |
-| [`cloudiful-bevy-localization`](./localization/README.md) | Localization runtime for app-provided static registries | You generate locale/key definitions in your own app and need runtime lookup + validation |
+| [`cloudiful-bevy-localization`](./localization/README.md) | Localization runtime for app-provided static registries with explicit TOML/JSON/YAML sources | You generate locale/key definitions in your own app and need runtime lookup + validation |
 | [`cloudiful-bevy-outline`](./outline/README.md) | Geometry-shell outline helpers for 3D meshes | You want a small reusable backface-shell outline setup instead of a full render pass |
-| [`cloudiful-bevy-settings`](./settings/README.md) | Generic settings action/schema helpers wired for Bevy systems | You keep app-specific settings types and UI, but want reusable settings flow infrastructure |
+| [`cloudiful-bevy-settings`](./settings/README.md) | Generic settings action/schema helpers wired for Bevy systems with JSON/TOML/YAML persistence | You keep app-specific settings types and UI, but want reusable settings flow infrastructure |
 
 ## Workspace Usage
 

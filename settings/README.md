@@ -147,6 +147,65 @@ fn main() {
 }
 ```
 
+## Storage Formats
+
+The crate enables the `json`, `toml`, and `yaml` features of `bevy-persistent`
+0.11, so `Persistent` settings can be stored with
+`StorageFormat::Json`, `StorageFormat::Toml`, or `StorageFormat::Yaml`. Pick a
+format per resource at build time; nothing in this crate inspects or rewrites
+the stored payload.
+
+```rust
+use bevy::prelude::*;
+use bevy_persistent::{Persistent, StorageFormat};
+use serde::{Deserialize, Serialize};
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+static TEST_FILE_COUNTER: AtomicUsize = AtomicUsize::new(0);
+
+#[derive(Resource, Debug, Default, Serialize, Deserialize)]
+struct AppSettings {
+    fullscreen: bool,
+}
+
+fn build_settings(
+    format: StorageFormat,
+    extension: &str,
+) -> (Persistent<AppSettings>, std::path::PathBuf) {
+    let next_id = TEST_FILE_COUNTER.fetch_add(1, Ordering::Relaxed);
+    let path = std::env::temp_dir().join(format!(
+        "cloudiful-bevy-settings-format-{}-{next_id}.{extension}",
+        std::process::id()
+    ));
+
+    let persistent = Persistent::<AppSettings>::builder()
+        .name("app settings")
+        .format(format)
+        .path(&path)
+        .default(AppSettings::default())
+        .build()
+        .unwrap();
+
+    (persistent, path)
+}
+
+fn main() {
+    let (json, json_path) = build_settings(StorageFormat::Json, "json");
+    let (yaml, yaml_path) = build_settings(StorageFormat::Yaml, "yaml");
+
+    drop(json);
+    drop(yaml);
+    std::fs::remove_file(json_path).ok();
+    std::fs::remove_file(yaml_path).ok();
+}
+```
+
+`StorageFormat::Yaml` is provided through `bevy-persistent`'s `yaml` feature,
+which still depends on the unmaintained `serde_yaml` 0.9 crate. JSON and TOML
+have no such caveat, and the localization crate uses the maintained
+`yaml_serde` crate for its YAML locale sources. Treat YAML persistence as
+compatibility support; prefer JSON or TOML for new settings files.
+
 ## Schema Types
 
 `SettingFieldSpec` is the generic description your UI layer can consume. Each

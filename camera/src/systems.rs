@@ -3,6 +3,11 @@ use crate::events::{CameraSwitched, SwitchCameraRequest};
 use bevy::camera::Camera;
 use bevy::prelude::*;
 
+type SwitchableCameraQuery<'w, 's> =
+    Query<'w, 's, (Entity, &'static SwitchableCamera, &'static Camera), With<SwitchableCamera>>;
+type ActiveCameraQuery<'w, 's> =
+    Query<'w, 's, (Entity, &'static mut Camera), With<SwitchableCamera>>;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct CameraCandidate {
     entity: Entity,
@@ -13,10 +18,7 @@ struct CameraCandidate {
 pub(crate) fn apply_switch_camera_requests(
     mut requests: MessageReader<SwitchCameraRequest>,
     mut switched_events: MessageWriter<CameraSwitched>,
-    mut cameras: ParamSet<(
-        Query<(Entity, &SwitchableCamera, &Camera), With<SwitchableCamera>>,
-        Query<(Entity, &mut Camera), With<SwitchableCamera>>,
-    )>,
+    mut cameras: ParamSet<(SwitchableCameraQuery<'_, '_>, ActiveCameraQuery<'_, '_>)>,
 ) {
     for request in requests.read().copied() {
         let ordered_cameras = ordered_candidates(&cameras.p0());

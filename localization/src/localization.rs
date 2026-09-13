@@ -17,7 +17,7 @@ pub struct Localization {
 
 impl Default for Localization {
     fn default() -> Self {
-        Self::load().expect("failed to load localization TOML files")
+        Self::load().expect("failed to load localization sources")
     }
 }
 
@@ -117,7 +117,7 @@ impl Plugin for LocalizationPlugin {
         definition_registry::register_definition(self.definition);
         app.insert_resource(
             Localization::from_definition(self.definition)
-                .expect("failed to load localization TOML files"),
+                .expect("failed to load localization sources"),
         );
     }
 }

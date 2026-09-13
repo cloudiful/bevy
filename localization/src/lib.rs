@@ -9,9 +9,10 @@ mod locale;
 mod localization;
 mod text_key;
 mod validation;
+mod value;
 
 /// Static locale sources and definitions supplied by the downstream app.
-pub use definition::{LocaleSource, LocalizationDefinition};
+pub use definition::{LocaleSource, LocaleSourceFormat, LocalizationDefinition};
 /// Registers the active [`LocalizationDefinition`] for helper lookups.
 pub use definition_registry::register_definition;
 /// Error returned when loading or validating a [`LocalizationDefinition`].
@@ -43,6 +44,7 @@ mod tests {
         LocaleSource {
             locale: "en-US",
             namespace: "common",
+            format: LocaleSourceFormat::Toml,
             contents: r#"
 greeting = "Hello {name}"
 [locale_name]
@@ -55,6 +57,7 @@ label = "Nested"
         LocaleSource {
             locale: "zh-CN",
             namespace: "common",
+            format: LocaleSourceFormat::Toml,
             contents: r#"
 greeting = "你好 {name}"
 [locale_name]
@@ -92,6 +95,7 @@ label = "嵌套"
             sources: &[LocaleSource {
                 locale: "en-US",
                 namespace: "common",
+                format: LocaleSourceFormat::Toml,
                 contents: r#"
 greeting = "Hello"
 [locale_name]
@@ -117,6 +121,7 @@ en_us = "English"
                 LocaleSource {
                     locale: "en-US",
                     namespace: "common",
+                    format: LocaleSourceFormat::Toml,
                     contents: r#"
 greeting = "Hello {name}"
 [locale_name]
@@ -129,6 +134,7 @@ label = "Nested"
                 LocaleSource {
                     locale: "zh-CN",
                     namespace: "common",
+                    format: LocaleSourceFormat::Toml,
                     contents: r#"
 greeting = "你好 {user}"
 [locale_name]
