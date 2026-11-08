@@ -3,7 +3,7 @@ members = ["outline", "camera", "input", "localization", "settings"]
 resolver = "2"
 
 [workspace.dependencies]
-bevy = { version = "0.19.1", default-features = false }
+bevy = { version = "0.20.1", default-features = false }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 toml = "1.1.6"

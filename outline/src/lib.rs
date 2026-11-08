@@ -61,7 +61,7 @@ impl Plugin for GpmoOutlinePlugin {
     fn build(&self, app: &mut App) {
         let default_style = self.default_style;
         app.insert_resource(PendingOutlineStyle(default_style))
-            .add_systems(Startup, setup_outline_assets);
+            .add_systems(PreStartup, setup_outline_assets);
     }
 }
 
@@ -156,5 +156,30 @@ mod tests {
         let transform = outline_shell_transform(style);
 
         assert_eq!(transform.scale, Vec3::splat(1.25));
+    }
+
+    #[test]
+    fn startup_systems_can_read_outline_assets() {
+        #[derive(Resource, Default)]
+        struct StartupRead(bool);
+
+        fn read_outline_assets(
+            outline_assets: Res<OutlineAssets>,
+            mut startup_read: ResMut<StartupRead>,
+        ) {
+            let _ = outline_assets.default_material();
+            startup_read.0 = true;
+        }
+
+        let mut app = App::new();
+        app.init_resource::<Assets<StandardMaterial>>()
+            .init_resource::<StartupRead>()
+            .add_plugins(GpmoOutlinePlugin::default())
+            .add_systems(Startup, read_outline_assets);
+
+        app.update();
+
+        assert!(app.world().resource::<StartupRead>().0);
+        assert!(app.world().contains_resource::<OutlineAssets>());
     }
 }

@@ -1,7 +1,8 @@
 [package]
 name = "cloudiful-bevy-settings"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2024"
+rust-version = "1.97.1"
 description = "Reusable Bevy settings runtime for app-defined actions, field keys, and localization context."
 readme = "README.md"
 license = "MIT OR Apache-2.0"
@@ -13,7 +14,7 @@ categories = ["game-development"]
 
 [dependencies]
 bevy = { workspace = true }
-bevy-persistent = { version = "0.11.0", features = ["json", "toml", "yaml"] }
+bevy-persistent = { version = "0.12.0", features = ["json", "toml", "yaml"] }
 serde = { workspace = true }
 
 [package.metadata.docs.rs]
