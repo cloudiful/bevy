@@ -61,8 +61,9 @@ The full runnable example lives at [`examples/basic.rs`](./examples/basic.rs).
 
 ## Default Style Flow
 
-`GpmoOutlinePlugin` creates one default material at startup and stores it in
-`OutlineAssets`.
+`GpmoOutlinePlugin` creates one default material during `PreStartup` and stores
+it in `OutlineAssets`, so the resource is already available to every `Startup`
+system and later schedule.
 
 - use `OutlineAssets` when many outline shells can share one default look
 - use `GpmoOutlinePlugin::with_default_style(...)` when the whole app should

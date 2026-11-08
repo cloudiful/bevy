@@ -207,10 +207,15 @@ choice, but all three formats are first-class for locale sources.
 - `TextKey::from_id(...)` resolves an id against the active registered
   definition
 
-## Migration
+## Locale Sources
 
-`LocaleSource` gained a required `format` field (0.3.0). Add
-`format: LocaleSourceFormat::Toml` to existing TOML sources to keep previous
-behavior; TOML parsing, flattening, duplicate detection, and unknown-value
-rejection are unchanged. JSON and YAML sources are new in 0.3.0 and follow the
-same rules.
+Each `LocaleSource` carries an explicit `LocaleSourceFormat`: `Toml`, `Json`, or
+`Yaml`. Use `LocaleSource::toml(...)`, `LocaleSource::json(...)`,
+`LocaleSource::yaml(...)`, or `LocaleSource::new(..., format, ...)`; the loader
+never guesses the format from the payload text.
+
+Every format lowers into the same flattened `String -> String` table, so
+namespace flattening, duplicate-key detection, and unknown-value rejection
+apply identically to TOML, JSON, and YAML sources. See
+[Serialization Formats](#serialization-formats) for the per-format examples and
+error reporting.

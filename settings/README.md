@@ -150,7 +150,7 @@ fn main() {
 ## Storage Formats
 
 The crate enables the `json`, `toml`, and `yaml` features of `bevy-persistent`
-0.11, so `Persistent` settings can be stored with
+0.12, so `Persistent` settings can be stored with
 `StorageFormat::Json`, `StorageFormat::Toml`, or `StorageFormat::Yaml`. Pick a
 format per resource at build time; nothing in this crate inspects or rewrites
 the stored payload.
